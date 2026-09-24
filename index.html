@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SV-Trainer</title>
+<meta name="description" content="Lern- und Pruefungstrainer fuer Immobiliensachverstaendige: Pruefungskatalog Sachkunde und Bautechnik plus die Rechenwege der ImmoWertV.">
+<meta name="theme-color" content="#14263f">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest?v=11">
+<link rel="icon" href="cover.png?v=11">
+<link rel="apple-touch-icon" href="cover.png?v=11">
+<link rel="stylesheet" href="stil.css?v=11">
+</head>
+<body>
+
+<header id="kopf">
+  <button id="zurueck" class="zurueck" hidden aria-label="zurueck">&#8592;</button>
+  <div class="kopftext">
+    <div id="kopftitel">SV-Trainer</div>
+    <div id="kopfsub">Ein Knopf, dann bist du drin</div>
+  </div>
+</header>
+
+<main id="buehne"></main>
+<div id="hinweis"></div>
+
+<nav id="leiste">
+  <button data-ziel="start" class="an"><span>&#9673;</span>Heute<em id="faellig"></em></button>
+  <button data-ziel="rechnen"><span>&#8721;</span>Rechnen</button>
+  <button data-ziel="pruefung"><span>&#9201;</span>Prüfung</button>
+  <button data-ziel="mehr"><span>&#9776;</span>Mehr</button>
+</nav>
+
+<script src="daten-pruefung.js?v=11"></script>
+<script src="daten-rechenwege.js?v=11"></script>
+<script src="daten-palast.js?v=11"></script>
+<script src="daten-gesetz.js?v=11"></script>
+<script src="daten-bauleitplanung.js?v=11"></script>
+<script src="planer.js?v=11"></script>
+<script src="karten.js?v=11"></script>
+<script src="app.js?v=11"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>

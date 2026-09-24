@@ -1,0 +1,13 @@
+{
+  "name": "SV-Trainer",
+  "short_name": "SV-Trainer",
+  "description": "Lern- und Pruefungstrainer fuer Immobiliensachverstaendige: Pruefungskatalog und die Rechenwege der ImmoWertV.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14263f",
+  "theme_color": "#14263f",
+  "lang": "de",
+  "icons": [{ "src": "cover.png", "sizes": "1400x1400", "type": "image/png", "purpose": "any" }]
+}
