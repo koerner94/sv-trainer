@@ -625,11 +625,21 @@ function vLernKarte(b) {
   }
   b.appendChild(zl);
 
-  /* Eine Karte, die du noch nie gesehen hast, wird NICHT abgefragt, sondern
-     gezeigt. Vier Antworten zu einer Sache, von der man noch nichts gehoert
-     hat, sind reines Raten - das lehrt nichts und aergert nur. Beim naechsten
-     Mal kommt sie dann als richtige Frage. */
-  const neuling = istNeu(id);
+  /* Eine Karte, die du noch nie gesehen hast, wird zuerst GEZEIGT und erst
+     beim naechsten Mal gefragt - so wollte André es nach seiner ersten Kritik:
+     Bei den Katalogkarten mit langen freien Antworten kann man ohne Vorwissen
+     nicht einmal anfangen, und erzeugte Ablenker machen daraus reines Raten.
+
+     AUSNAHME seit 29.09.2026: Pruefungsfragen der Vorlage (eigene Moeglichkeiten
+     oder eigene Punktzahl) werden SOFORT gefragt. Mit der alten Regel sah André
+     bei allen 50 DEKRA-Fragen zuerst die Loesung angekreuzt - genau das, was er
+     nicht wollte. Und fachlich ist der Versuch vor der Loesung hier kein
+     verlorener: Ein Fehlversuch mit sofortiger Rueckmeldung verbessert das
+     Behalten (Pretesting-Effekt, Richland, Kornell & Kao 2009; fuer
+     Auswahlfragen Little & Bjork 2016). Die Rueckmeldung kommt direkt nach
+     "Antwort pruefen". */
+  const pruefungsKarte = !!(c.optionen && c.richtig) || !!c.punkte;
+  const neuling = istNeu(id) && !pruefungsKarte;
   if (neuling) LERN.auf = true;
 
   const kf = el('div', 'karte-frage' + (neuling ? ' neuling' : ''));
@@ -637,7 +647,7 @@ function vLernKarte(b) {
   const sym = symbolFuer(c);
   if (sym) marken.appendChild(el('span', 'marke sym', sym));
   marken.appendChild(el('span', 'marke', c.thema));
-  marken.appendChild(el('span', 'marke', neuling ? 'zum ersten Mal' : 'Box ' + boxVon(k)));
+  marken.appendChild(el('span', 'marke', neuling ? 'zum ersten Mal' : (istNeu(id) ? 'neu' : 'Box ' + boxVon(k))));
   kf.appendChild(marken);
   /* Die Paragrafen der Karte, zum Antippen. Nachschlagen muss billiger sein als
      Weiterraten - sonst liest man den Wortlaut nie. */
@@ -654,20 +664,7 @@ function vLernKarte(b) {
   const eigeneWahl = !!(c.optionen && c.richtig);
   LERN.kreuze = LERN.kreuze || {};
 
-  if (neuling && eigeneWahl) {
-    /* Erste Begegnung: die Frage mit ihren Moeglichkeiten, die richtigen
-       gruen markiert. Erst beim naechsten Mal wird wirklich gefragt. */
-    const w = el('div', 'wahl');
-    c.optionen.forEach((txt, i) => {
-      const kn = el('button', c.richtig.indexOf(i) >= 0 ? 'gut' : '');
-      kn.appendChild(el('div', 'obuchstabe', 'ABCDE'[i]));
-      kn.appendChild(el('div', 'otext', String(txt).replace(/\s+/g, ' ')));
-      kn.disabled = true;
-      w.appendChild(kn);
-    });
-    kf.appendChild(w);
-    kf.appendChild(el('p', 'hin', 'Richtig: ' + c.richtig.map(i => 'ABCDE'[i]).join(', ') + '.'));
-  } else if (neuling) {
+  if (neuling) {
     kf.appendChild(el('div', 'a', c.a));
   } else if (eigeneWahl) {
     /* Ankreuzen wie in der Pruefung: mehrere Kreuze sind immer erlaubt. Die
@@ -765,7 +762,9 @@ function vLernKarte(b) {
     kn.style.marginTop = '1rem';
     kn.onclick = () => { LERN.auf = true; zeige('lern-karte'); };
     kf.appendChild(kn);
-    kf.appendChild(el('p', 'hin', 'Sag die Antwort erst laut. Der Versuch ist der Teil, der wirkt — auch wenn er danebengeht.'));
+    kf.appendChild(el('p', 'hin', c.punkte
+      ? 'Rechne oder schreib die Lösung erst auf Papier, wie in der Prüfung. Dann aufdecken und ehrlich bewerten.'
+      : 'Sag die Antwort erst laut. Der Versuch ist der Teil, der wirkt — auch wenn er danebengeht.'));
   } else {
     kf.appendChild(el('div', 'a', c.a));
   }
