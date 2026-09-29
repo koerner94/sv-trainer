@@ -12,6 +12,12 @@ let KARTEN = [];
 let NACH_ID = {};
 
 function bauKarten() {
+  /* Faecher, die mit einer eigenen Kartendatei gekommen sind. Ihre
+     Beschriftung steht nicht im Programm, sondern in der Datei - so bleibt
+     auch der Name eines vertraulichen Katalogs aus dem Repository heraus. */
+  for (const id in (STAND.eigeneFaecher || {})) {
+    if (!FAECHER[id]) FAECHER[id] = STAND.eigeneFaecher[id];
+  }
   const k = [];
 
   for (const c of PRUEFKARTEN) {
@@ -196,6 +202,11 @@ const fachName = (f) => (FAECHER[f] ? FAECHER[f].name : f);
    von Anfang an verfuegbar, denn dort ist die erste Begegnung selbst schon
    das Lernen. */
 function verfuegbar(c) {
+  /* Fokus: André lernt zeitweise nur EIN Fach, alles andere ruht. Das steht
+     bewusst ganz vorn - wer sich auf einen Katalog konzentriert, will ihn auch
+     wirklich allein sehen, ohne dass eine andere Regel etwas durchlaesst. */
+  const fokus = STAND.einst.fokus;
+  if (fokus) return c.fach === fokus;
   /* Eigene Karten sind standardmaessig aus. Fuer die D1-Pruefung am 5. Oktober
      waere der D1Plus-Stoff nur Ballast; anschalten laesst er sich jederzeit. */
   if (c.fach === 'D1P') return !!STAND.einst.eigeneAn;

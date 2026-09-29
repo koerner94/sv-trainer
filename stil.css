@@ -542,3 +542,13 @@ input[type=search] {
 .planzeile .seite .wer { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--leise); }
 .planzeile .seite p { margin: .15rem 0 0; font-size: .9rem; line-height: 1.45; }
 .planzeile > .hin { margin-bottom: 0; }
+
+/* ---- Fokus-Band auf dem Startbildschirm ---- */
+.fokusband {
+  border: 1px solid #b1560f; background: rgba(177, 86, 15, .08); border-radius: 12px;
+  padding: .7rem .8rem; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .3rem;
+}
+.fokusband b { font-size: .98rem; }
+.fokusband span { font-size: .86rem; color: var(--leise); }
+.fokusband .knopf { align-self: flex-start; margin-top: .2rem; padding: .35rem .8rem; font-size: .85rem; }
+.fokusband.leer { border-color: var(--schlecht); background: var(--schlechtbg); }

@@ -232,6 +232,55 @@ function belohnungsZeile() {
   return d;
 }
 
+/* ================================================================ FOKUS */
+/* Kurz vor einer Pruefung will man nur noch EINEN Katalog sehen. Der Fokus
+   sperrt alles andere - nichts wird geloescht, der Lernstand der uebrigen
+   Faecher bleibt einfach stehen und ist nach dem Ausschalten unveraendert da.
+   Die eigentliche Sperre steckt in verfuegbar() (karten.js); hier wird nur
+   geschaltet. */
+/* Der Pruefungstag einer Vorlage im Fokus-Fach, falls er noch bevorsteht. */
+function fokusTermin(fach) {
+  const h = heute();
+  /* Das Fach einer Frage wird direkt in den eingelesenen Karten nachgesehen,
+     nicht im fertigen Stapel: Beim Einlesen wird der Stapel erst NACH der
+     Rueckfrage neu gebaut, und ohne diesen Umweg fand die App den
+     Pruefungstag genau in dem Moment nicht, in dem sie ihn braucht. */
+  const fachVon = {};
+  (STAND.eigeneKarten || []).forEach(c => { if (c && c.id) fachVon[c.id] = c.fach; });
+  const p = (STAND.eigenePruefungen || []).find(x => x.datum && x.datum >= h &&
+    ((x.gruppen || []).reduce((a, g) => a.concat(g.aus || []), []).concat(x.fragen || []))
+      .some(id => (fachVon[id] || (NACH_ID[id] && NACH_ID[id].fach)) === fach));
+  return p ? p.datum : null;
+}
+
+function fokusSetzen(fach) {
+  const e = STAND.einst;
+  if (!e.fokus) { e.fachVorFokus = e.fach; e.zielVorFokus = e.zielDatum; }
+  /* Kennt die Vorlage einen Pruefungstag, zielt der Plan genau darauf. */
+  const termin = fokusTermin(fach);
+  if (termin) e.zielDatum = termin;
+  e.fokus = fach;
+  e.fach = 'alle';            // "alle" heisst im Fokus: alles, was im Fokus liegt
+  STAND.laufendeRunde = null; // eine angefangene Runde aus anderen Faechern passt nicht mehr
+  sichern();
+  bauKarten();
+}
+function fokusBeenden() {
+  const e = STAND.einst;
+  e.fokus = null;
+  e.fach = e.fachVorFokus || 'alle';
+  if (e.zielVorFokus) e.zielDatum = e.zielVorFokus;
+  delete e.fachVorFokus;
+  delete e.zielVorFokus;
+  STAND.laufendeRunde = null;
+  sichern();
+  bauKarten();
+}
+function fokusName() {
+  const f = STAND.einst.fokus;
+  return f ? ((FAECHER[f] && FAECHER[f].name) || f) : '';
+}
+
 /* ================================================================ HEUTE */
 /* Der Startbildschirm hat genau eine Aufgabe: ohne eine einzige Entscheidung
    ins Lernen führen. Alles, was nicht dazu beiträgt, liegt zugeklappt oder
@@ -275,10 +324,34 @@ function vStart(b) {
   satz.appendChild(lnk);
   b.appendChild(satz);
 
+  /* Fokus-Band: sagt, dass gerade nur ein Fach zaehlt, und wie man da
+     wieder herauskommt. Fehlen die Karten auf diesem Geraet (die eigene Datei
+     ist nur einmal pro Browser eingelesen), steht das hier - sonst saehe es
+     aus, als sei heute einfach alles erledigt. */
+  if (STAND.einst.fokus) {
+    const fach = STAND.einst.fokus;
+    const da = KARTEN.filter(c => c.fach === fach).length;
+    const d = el('div', 'fokusband' + (da ? '' : ' leer'));
+    d.appendChild(el('b', null, 'Fokus: ' + fokusName()));
+    d.appendChild(el('span', null, da
+      ? da + ' Fragen. Alles andere ruht — Runde und Prüfung kommen nur aus diesem Katalog.' +
+        (fokusGrenze() ? ' Bis zur Prüfung kommt jede Karte spätestens ' +
+          (fokusGrenze() === 1 ? 'jeden Tag' : 'alle ' + fokusGrenze() + ' Tage') + ' wieder.' : '')
+      : 'Die Karten dieses Katalogs sind auf diesem Gerät nicht eingelesen. Lies die Datei unter Mehr, Einstellungen, Eigene Karten ein — oder beende den Fokus.'));
+    const aus = el('button', 'knopf stumm', 'Fokus beenden');
+    aus.onclick = () => {
+      if (!confirm('Fokus beenden? Dann kommen wieder alle Fächer dran.')) return;
+      fokusBeenden();
+      zeige('start');
+    };
+    d.appendChild(aus);
+    b.appendChild(d);
+  }
+
   /* Ein neues Kapitel steht so lange offen sichtbar, bis es einmal offen war.
      Danach wandert es zu den anderen Wegen ins Zugeklappte - ein Startbildschirm
      darf nicht mit jeder Neuerung wachsen. */
-  if (!STAND.blpGesehen) {
+  if (!STAND.blpGesehen && !STAND.einst.fokus) {
     const kn = el('button', 'kachel');
     kn.style.borderLeftColor = 'var(--m-gruen)';
     const kz = el('div', 'kachelkopf');
@@ -380,7 +453,8 @@ function nebenwege() {
     'Flächennutzungsplan und Bebauungsplan nebeneinander — Bild, Gegenüberstellung, Fälle.', () => zeige('plaene')],
    ['Nur ein Fach lernen', 'zählt mit', 'gruen',
     'Sonst entscheidet der Plan, und gemischt ist nachweislich wirksamer. Aber manchmal muss man gezielt ran.', () => zeige('lernen')]
-  ].forEach(([t, marke, farbe, u, fn]) => {
+  ].filter(([t]) => !STAND.einst.fokus || t === 'Prüfung simulieren' || t === 'Rechenwege üben')
+   .forEach(([t, marke, farbe, u, fn]) => {
     const k = el('button', 'kachel');
     k.style.borderLeftColor = 'var(--m-' + farbe + ')';
     const kopfz = el('div', 'kachelkopf');
@@ -572,8 +646,92 @@ function vLernKarte(b) {
   if (neuling) kf.appendChild(el('div', 'neuhinweis', 'Neue Karte — einmal in Ruhe ansehen. Abgefragt wird sie beim nächsten Mal.'));
   kf.appendChild(el('div', 'f', c.f));
 
-  if (neuling) {
+  /* Originalfragen bringen ihre eigenen Antwortmoeglichkeiten mit. Die werden
+     IMMER gezeigt, auch im Modus "freie Antwort": Eine Frage wie
+     "Ein Flurstueck ..." ist ohne ihre Moeglichkeiten gar keine Frage. Und es
+     werden nie erfundene Ablenker daruebergelegt - gelernt wird genau das, was
+     in der Pruefung kommt. */
+  const eigeneWahl = !!(c.optionen && c.richtig);
+  LERN.kreuze = LERN.kreuze || {};
+
+  if (neuling && eigeneWahl) {
+    /* Erste Begegnung: die Frage mit ihren Moeglichkeiten, die richtigen
+       gruen markiert. Erst beim naechsten Mal wird wirklich gefragt. */
+    const w = el('div', 'wahl');
+    c.optionen.forEach((txt, i) => {
+      const kn = el('button', c.richtig.indexOf(i) >= 0 ? 'gut' : '');
+      kn.appendChild(el('div', 'obuchstabe', 'ABCDE'[i]));
+      kn.appendChild(el('div', 'otext', String(txt).replace(/\s+/g, ' ')));
+      kn.disabled = true;
+      w.appendChild(kn);
+    });
+    kf.appendChild(w);
+    kf.appendChild(el('p', 'hin', 'Richtig: ' + c.richtig.map(i => 'ABCDE'[i]).join(', ') + '.'));
+  } else if (neuling) {
     kf.appendChild(el('div', 'a', c.a));
+  } else if (eigeneWahl) {
+    /* Ankreuzen wie in der Pruefung: mehrere Kreuze sind immer erlaubt. Die
+       Zahl der richtigen Antworten wird NICHT verraten - nur das Etikett (1)
+       oder (1+) in der Frage, genau wie auf dem Pruefungsbogen. */
+    const gew = LERN.kreuze[id] || [];
+    const w = el('div', 'wahl');
+    c.optionen.forEach((txt, i) => {
+      const drin = gew.indexOf(i) >= 0;
+      const kn = el('button', drin && !LERN.auf ? 'gewaehlt' : '');
+      kn.appendChild(el('div', 'kreuz', drin ? '✕' : ''));
+      kn.appendChild(el('div', 'obuchstabe', 'ABCDE'[i]));
+      kn.appendChild(el('div', 'otext', String(txt).replace(/\s+/g, ' ')));
+      if (LERN.auf) {
+        if (c.richtig.indexOf(i) >= 0) kn.classList.add('gut');
+        else if (drin) kn.classList.add('schlecht');
+        kn.disabled = true;
+      } else {
+        kn.onclick = () => {
+          const g = (LERN.kreuze[id] || []).slice();
+          const stelle = g.indexOf(i);
+          if (stelle >= 0) g.splice(stelle, 1); else g.push(i);
+          LERN.kreuze[id] = g;
+          zeige('lern-karte');
+        };
+      }
+      w.appendChild(kn);
+    });
+    kf.appendChild(w);
+
+    if (!LERN.auf) {
+      const pr = el('button', 'knopf breit', 'Antwort prüfen');
+      pr.style.marginTop = '.8rem';
+      pr.onclick = () => {
+        const meine = (LERN.kreuze[id] || []).slice().sort();
+        const soll = c.richtig.slice().sort();
+        const genau = meine.length === soll.length && meine.every((x, i) => x === soll[i]);
+        LERN.wahl = genau ? id : '__daneben__';
+        LERN.auf = true;
+        sichern();
+        zeige('lern-karte');
+      };
+      kf.appendChild(pr);
+      kf.appendChild(el('p', 'hin', c.wertung === 'ganz'
+        ? 'Wie in der Prüfung: Die Frage zählt nur, wenn genau die richtigen Kreuze gesetzt sind. Nichts angekreuzt heißt nicht gewusst.'
+        : 'Jedes richtige Kreuz zählt, jedes falsche zieht ab. Nichts angekreuzt heißt nicht gewusst.'));
+    } else {
+      const meine = LERN.kreuze[id] || [];
+      const fehlt = c.richtig.filter(i => meine.indexOf(i) < 0).map(i => 'ABCDE'[i]);
+      const zuviel = meine.filter(i => c.richtig.indexOf(i) < 0).map(i => 'ABCDE'[i]);
+      const r = el('div', 'rueck ' + (LERN.wahl === id ? 'gut' : 'schlecht'));
+      if (LERN.wahl === id) {
+        r.appendChild(el('b', null, 'Richtig — genau die richtigen Kreuze.'));
+      } else {
+        r.appendChild(el('b', null, 'Daneben. Richtig wären: ' + c.richtig.map(i => 'ABCDE'[i]).join(', ') + '.'));
+        const teile = [];
+        if (fehlt.length) teile.push('Gefehlt hat: ' + fehlt.join(', '));
+        if (zuviel.length) teile.push('zu viel angekreuzt: ' + zuviel.join(', '));
+        r.appendChild(el('span', null, (teile.length ? teile.join(' · ') + '. ' : '') +
+          (c.wertung === 'ganz' ? 'In der Prüfung wären das null Punkte. ' : '') +
+          'Die Karte kommt heute noch einmal.'));
+      }
+      kf.appendChild(r);
+    }
   } else if (LERN.stil === 'mc' && !c.nurFrei) {
     if (!LERN.opts[id]) LERN.opts[id] = mcOptionen(id);
     const w = el('div', 'wahl');
@@ -637,13 +795,15 @@ function vLernKarte(b) {
         LERN.q.pop();
         LERN.q.splice(Math.min(LERN.i + 3, LERN.q.length), 0, id);
       }
+      if (LERN.kreuze) delete LERN.kreuze[id];
       LERN.i++; LERN.auf = false; LERN.wahl = null; LERN.vertippt = false;
       punkteZeigen(k.punkte);        // auch bei der letzten Karte der Runde
       if (LERN.i >= LERN.q.length) { STAND.laufendeRunde = null; sichern(); zeige('lern-ende'); }
       else { sichern(); zeige('lern-karte'); }
     };
 
-    if (!neuling && LERN.stil === 'mc' && !c.nurFrei && LERN.wahl !== id && !LERN.vertippt) {
+    const wahlModus = eigeneWahl || (LERN.stil === 'mc' && !c.nurFrei);
+    if (!neuling && wahlModus && LERN.wahl !== id && !LERN.vertippt) {
       /* Falsch angetippt: die Note steht damit fest, es gibt nichts zu bewerten. */
       const w = el('button', 'knopf breit', 'Weiter');
       w.style.marginTop = '1rem';
@@ -667,7 +827,7 @@ function vLernKarte(b) {
         n.appendChild(kn);
       });
       kf.appendChild(n);
-      if (!neuling && LERN.stil === 'mc' && !c.nurFrei) {
+      if (!neuling && wahlModus) {
         const df = el('button', 'knopf stumm breit', 'Doch nicht gewusst, nur geraten');
         df.style.marginTop = '.6rem';
         df.onclick = () => abhaken(1);
@@ -1145,8 +1305,8 @@ function vUebersicht(b, kid) {
 function pruefungsFrage(id, stil) {
   const c = NACH_ID[id];
   if (c.optionen && c.richtig) {
-    return { id, optionen: c.optionen, richtig: c.richtig,
-             mehrere: c.richtig.length > 1, max: c.richtig.length, art: 'wahl' };
+    return { id, optionen: c.optionen, richtig: c.richtig, wertung: c.wertung,
+             mehrere: c.richtig.length > 1, max: c.punkte || c.richtig.length, art: 'wahl' };
   }
   /* Eine eigene Karte mit eigener Punktzahl ist eine offene Frage oder eine
      Rechenaufgabe. Die laesst sich nicht ankreuzen, auch nicht im Wahl-Modus. */
@@ -1164,19 +1324,35 @@ function pruefungsFrage(id, stil) {
    Reihenfolge der Vorlage, mit ihren eigenen Moeglichkeiten und ihrer eigenen
    Punktzahl. Nur so misst der Durchlauf das, was die Vorlage misst. */
 function starteOriginalPruefung(p) {
-  const ids = (p.fragen || []).filter(id => NACH_ID[id]);
+  /* Zwei Sorten Vorlage: eine feste Fragenfolge (D1Plus) oder Gruppen, aus
+     denen gezogen wird (D1: 45 Auswahlfragen aus 46 im Pool, dazu alle vier
+     offenen). Gezogen wird bei jedem Start neu - sonst uebt man irgendwann die
+     Reihenfolge statt der Fragen. */
+  let ids;
+  if ((p.gruppen || []).length) {
+    ids = [];
+    for (const g of p.gruppen) {
+      const da = (g.aus || []).filter(id => NACH_ID[id]);
+      ids = ids.concat(mischen(da).slice(0, Math.min(g.anzahl || da.length, da.length)));
+    }
+  } else {
+    ids = (p.fragen || []).filter(id => NACH_ID[id]);
+  }
   if (!ids.length) { hinweis('Zu dieser Prüfung fehlen die Fragen.'); return; }
   const fragen = ids.map(id => {
     const c = NACH_ID[id];
     if (c.optionen && c.richtig) {
-      return { id, optionen: c.optionen, richtig: c.richtig,
+      return { id, optionen: c.optionen, richtig: c.richtig, wertung: c.wertung,
                mehrere: c.richtig.length > 1, max: c.punkte || c.richtig.length, art: 'wahl' };
     }
     return { id, max: c.punkte || 1, art: 'frei' };
   });
   const e = STAND.einst;
+  /* Die Vorlage bringt ihre eigene Zeit mit, wenn sie eine kennt - D1 sind
+     90 Minuten. Nur wenn nicht, gilt die Einstellung. */
+  const minuten = p.minuten || e.pruefMinuten;
   PR = { fragen, ids, i: 0, antworten: {}, notizen: {}, noten: null, anzahl: ids.length,
-         minuten: e.pruefMinuten, ende: Date.now() + e.pruefMinuten * 60000, bestehen: e.bestehen,
+         minuten, ende: Date.now() + minuten * 60000, bestehen: e.bestehen,
          original: p.name, originalId: p.id,
          maxPunkte: fragen.reduce((s, f) => s + f.max, 0) };
   STAND.laufendePruefung = PR;
@@ -1202,8 +1378,18 @@ function stoppUhr() { if (PRUHR) { clearInterval(PRUHR); PRUHR = null; } }
 
 /* Punkte einer beantworteten Wahlfrage: richtig +1, falsch -1, nie unter null. */
 function punkteFuerWahl(f, gekreuzt) {
+  const meine = (gekreuzt || []).slice().sort();
+  /* Zwei Wertungen, weil die beiden DEKRA-Teile verschieden zaehlen.
+     "ganz": die Frage bringt ihren Punkt nur bei genau den richtigen Kreuzen -
+     so kommt die D1-Rechnung 45 Fragen mal 1 Punkt zustande.
+     Sonst: jedes richtige Kreuz +1, jedes falsche -1, nie unter null (D1Plus). */
+  if (f.wertung === 'ganz') {
+    const soll = f.richtig.slice().sort();
+    const gleich = meine.length === soll.length && meine.every((x, i) => x === soll[i]);
+    return gleich ? f.max : 0;
+  }
   let p = 0;
-  for (const i of (gekreuzt || [])) p += f.richtig.indexOf(i) >= 0 ? 1 : -1;
+  for (const i of meine) p += f.richtig.indexOf(i) >= 0 ? 1 : -1;
   return Math.max(0, p);
 }
 
@@ -1237,7 +1423,11 @@ function vPruefungFrage(b) {
   const marken = el('div', 'marken');
   marken.appendChild(el('span', 'marke', c.thema));
   marken.appendChild(el('span', 'marke p', f.max + (f.max === 1 ? ' Punkt' : ' Punkte')));
-  if (f.art === 'wahl') marken.appendChild(el('span', 'marke', f.mehrere ? 'mehrere richtig' : 'eine richtig'));
+  /* Bei Originalfragen steht (1) oder (1+) schon in der Frage - mehr verraet
+     auch der Pruefungsbogen nicht. Eine Marke "mehrere richtig" wuerde die
+     Loesung mitliefern. Nur bei den erzeugten Katalogfragen ist immer genau
+     eine richtig, und das darf dastehen. */
+  if (f.art === 'wahl' && !(c.optionen && c.richtig)) marken.appendChild(el('span', 'marke', 'eine richtig'));
   kf.appendChild(marken);
   const gmp = gesetzesMarken(c);
   if (gmp) kf.appendChild(gmp);
@@ -1263,8 +1453,10 @@ function vPruefungFrage(b) {
       w.appendChild(kn);
     });
     kf.appendChild(w);
-    kf.appendChild(el('p', 'hin', 'Kreuze alles an, was du für richtig hältst. Jedes richtige Kreuz gibt einen Punkt, '
-      + 'jedes falsche zieht einen ab. Wenn du unsicher bist, lass das Kreuz lieber weg.'));
+    kf.appendChild(el('p', 'hin', f.wertung === 'ganz'
+      ? 'Kreuze alles an, was du für richtig hältst. Die Frage bringt ihren Punkt nur, wenn genau die richtigen Kreuze gesetzt sind — alles oder nichts anzukreuzen gibt null.'
+      : 'Kreuze alles an, was du für richtig hältst. Jedes richtige Kreuz gibt einen Punkt, '
+        + 'jedes falsche zieht einen ab. Wenn du unsicher bist, lass das Kreuz lieber weg.'));
   } else {
     const ta = el('textarea');
     ta.id = 'notiz';
@@ -1373,7 +1565,10 @@ function vPruefungErgebnis(b, fertig) {
     fertig = { prozent, bestanden, p, max: PR.maxPunkte, anzahl: PR.anzahl,
                falsch, halb, fragen: PR.fragen, noten: PR.noten, antworten: PR.antworten,
                original: PR.original || null,
-               ruhend: !!PR.original && !STAND.einst.eigeneAn };
+               /* Ruhend heisst: keine einzige Frage dieser Pruefung ist im taeglichen
+                  Lernen erreichbar. Frueher hing das am Schalter fuer die D1Plus-
+                  Karten - fuer den D1-Katalog im Fokus war das schlicht falsch. */
+               ruhend: !!PR.original && !PR.fragen.some(x => NACH_ID[x.id] && verfuegbar(NACH_ID[x.id])) };
     PR = null;
     STAND.laufendePruefung = null;
     sichern();
@@ -1460,12 +1655,18 @@ function vPruefung(b) {
 
   /* Originalpruefungen stehen vor der Simulation aus dem Katalog: wer die echte
      Vorlage hat, will sie auch durchlaufen, und zwar unveraendert. */
-  const eigen = STAND.eigenePruefungen || [];
+  const eigen = (STAND.eigenePruefungen || []).filter(p => {
+    if (!STAND.einst.fokus) return true;
+    const ids = (p.gruppen || []).reduce((a, g) => a.concat(g.aus || []), []).concat(p.fragen || []);
+    return ids.some(id => NACH_ID[id] && NACH_ID[id].fach === STAND.einst.fokus);
+  });
   if (eigen.length) {
     b.appendChild(el('h2', null, 'Originalprüfung'));
     b.appendChild(el('p', 'hin', 'Genau die Fragen der Vorlage, in ihrer Reihenfolge, mit ihren Punkten. Die Musterlösung steht danach wörtlich daneben.'));
     eigen.forEach(p => {
-      const da = (p.fragen || []).filter(id => NACH_ID[id]).length;
+      const da = (p.gruppen || []).length
+        ? p.gruppen.reduce((s, g) => s + Math.min(g.anzahl || 0, (g.aus || []).filter(id => NACH_ID[id]).length), 0)
+        : (p.fragen || []).filter(id => NACH_ID[id]).length;
       const kn = el('button', 'kachel');
       kn.style.borderLeftColor = 'var(--m-gruen)';
       const kz = el('div', 'kachelkopf');
@@ -1473,10 +1674,18 @@ function vPruefung(b) {
       kz.appendChild(el('span', 'marke gruen', 'Originalformat'));
       kn.appendChild(kz);
       kn.appendChild(el('small', null, da + ' Fragen  ·  ' + (p.punkte || '?') + ' Punkte  ·  ' +
-        e.pruefMinuten + ' Minuten  ·  Quelle: ' + (p.quelle || 'eigene Datei')));
+        (p.minuten || e.pruefMinuten) + ' Minuten  ·  Quelle: ' + (p.quelle || 'eigene Datei')));
+      if (p.hinweis) kn.appendChild(el('div', 'zeile2', p.hinweis));
       kn.onclick = () => starteOriginalPruefung(p);
       b.appendChild(kn);
     });
+    /* Im Fokus gibt es genau eine Pruefung: die der Vorlage. Eine zweite,
+       frei gemischte Simulation daneben waere nur eine Entscheidung mehr. */
+    if (STAND.einst.fokus) {
+      b.appendChild(el('p', 'hin', 'Im Fokus gibt es nur diese eine Prüfung. Die Bestehensgrenze steht nicht in der Vorlage — die App nimmt deine Einstellung von ' +
+        STAND.einst.bestehen + ' Prozent. Die freie Simulation kommt zurück, sobald du den Fokus beendest.'));
+      return;
+    }
     b.appendChild(el('h2', null, 'Oder eine Simulation aus dem Katalog'));
   }
 
@@ -1752,6 +1961,25 @@ function vEinstellungen(b) {
   });
   b.appendChild(bw);
 
+  b.appendChild(el('h2', null, 'Fokus'));
+  b.appendChild(el('p', 'hin', e.fokus
+    ? 'Gerade zählt nur „' + fokusName() + '“. Alles andere ruht, der Lernstand bleibt stehen.'
+    : 'Nur ein Fach lernen und prüfen, alles andere ruht — etwa kurz vor einer Prüfung. Der Lernstand der übrigen Fächer bleibt dabei unverändert.'));
+  const fk = el('div', 'knoepfe');
+  const zaehl = {};
+  KARTEN.forEach(c => { zaehl[c.fach] = (zaehl[c.fach] || 0) + 1; });
+  const ohneFokus = el('button', null, 'Kein Fokus');
+  ohneFokus.setAttribute('aria-pressed', String(!e.fokus));
+  ohneFokus.onclick = () => { if (e.fokus) fokusBeenden(); zeige('einstellungen'); };
+  fk.appendChild(ohneFokus);
+  Object.keys(FAECHER).filter(f => zaehl[f]).forEach(f => {
+    const kn = el('button', null, 'Nur ' + FAECHER[f].name + '  ' + zaehl[f]);
+    kn.setAttribute('aria-pressed', String(e.fokus === f));
+    kn.onclick = () => { fokusSetzen(f); zeige('einstellungen'); };
+    fk.appendChild(kn);
+  });
+  b.appendChild(fk);
+
   b.appendChild(el('h2', null, 'Eigene Karten'));
   const anzahlEigen = (STAND.eigeneKarten || []).length;
   b.appendChild(el('p', 'hin', anzahlEigen
@@ -1776,7 +2004,20 @@ function vEinstellungen(b) {
         /* Fassung 2 bringt die Pruefungen als GANZES mit: Name und Fragenfolge.
            Nur damit laesst sich die Vorlage von vorn bis hinten durchlaufen. */
         const pr = (!Array.isArray(roh) && roh.pruefungen) || [];
-        STAND.eigenePruefungen = pr.filter(p => p && p.id && p.name && (p.fragen || []).length);
+        STAND.eigenePruefungen = pr.filter(p => p && p.id && p.name &&
+          ((p.fragen || []).length || (p.gruppen || []).length));
+        /* Eigene Faecher: Beschriftung und Farbe kommen aus der Datei mit. So
+           bleibt auch der Name eines vertraulichen Katalogs aus dem Programm. */
+        STAND.eigeneFaecher = (!Array.isArray(roh) && roh.faecher) || {};
+        const neue = Object.keys(STAND.eigeneFaecher).filter(f => gut.some(c => c.fach === f));
+        if (neue.length === 1 && STAND.einst.fokus !== neue[0] &&
+            confirm('Ab jetzt nur noch „' + STAND.eigeneFaecher[neue[0]].name + '“ lernen?\n\n' +
+                    'Alles andere ruht, bis du den Fokus wieder ausschaltest. Dein Lernstand in den ' +
+                    'anderen Fächern bleibt dabei unverändert.' +
+                    (fokusTermin(neue[0]) ? '\n\nDas Zieldatum wird auf den Prüfungstag gesetzt: ' +
+                      datumText(fokusTermin(neue[0])) + '.' : ''))) {
+          fokusSetzen(neue[0]);
+        }
         /* Mitlernen bleibt aus: der D1Plus-Stoff ist fuer den 5. Oktober nicht
            dran. Die Pruefung selbst laesst sich trotzdem jederzeit starten. */
         sichern();
@@ -1784,7 +2025,7 @@ function vEinstellungen(b) {
         hinweis(gut.length + ' Karten eingelesen' +
           (STAND.eigenePruefungen.length ? ', dazu ' + STAND.eigenePruefungen.length + ' Originalprüfung' +
             (STAND.eigenePruefungen.length === 1 ? '' : 'en') : '') + '.');
-        zeige(STAND.eigenePruefungen.length ? 'pruefung' : 'einstellungen');
+        zeige(STAND.einst.fokus ? 'start' : (STAND.eigenePruefungen.length ? 'pruefung' : 'einstellungen'));
       } catch (err) {
         hinweis('Die Datei ließ sich nicht lesen.');
       }
@@ -1803,15 +2044,17 @@ function vEinstellungen(b) {
       an.appendChild(kn);
     });
     b.appendChild(an);
-    b.appendChild(el('p', 'hin', 'Das gilt nur für das tägliche Lernen. Die Originalprüfung kannst du jederzeit unter Prüfung starten, auch wenn die Karten hier ruhen — für den 5. Oktober ist der D1Plus-Stoff sonst nur Ballast.'));
+    b.appendChild(el('p', 'hin', 'Der Schalter gilt für die D1Plus-Karten und nur für das tägliche Lernen. Der D1-Katalog ist immer dabei. Die Originalprüfungen kannst du jederzeit unter Prüfung starten, auch wenn die Karten hier ruhen.'));
     const weg = el('button', 'knopf stumm breit', 'Eigene Karten entfernen');
     weg.onclick = () => {
       if (!confirm('Die eingelesenen eigenen Karten entfernen? Die Datei im OneDrive bleibt, du kannst sie jederzeit wieder einlesen.')) return;
       STAND.eigeneKarten = [];
       STAND.eigenePruefungen = [];
+      STAND.eigeneFaecher = {};
       STAND.einst.eigeneAn = false;
       sichern();
       bauKarten();
+      if (STAND.einst.fokus && !KARTEN.some(c => c.fach === STAND.einst.fokus)) fokusBeenden();
       zeige('einstellungen');
     };
     b.appendChild(weg);

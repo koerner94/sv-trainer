@@ -75,6 +75,10 @@ function leererStand() {
     version: 2,
     einst: { fach: 'alle', stil: 'mc', pruefAnzahl: 45, pruefMinuten: 60, bestehen: 60,
              rundenGroesse: RUNDE_STANDARD, belohnung: 'deutlich', eigeneAn: false,
+             /* Fokus: nur dieses eine Fach wird abgefragt, alles andere ruht.
+                Nichts geht dabei verloren - der Lernstand der anderen Faecher
+                bleibt stehen und ist nach dem Ausschalten unveraendert da. */
+             fokus: null,
              startDatum: h, zielDatum: tagPlus(h, ZIEL_TAGE) },
     karten: {},          // id -> {s, d, due, last, reps, lapses, ok, fail, seen}
     stufen: {},          // Kette -> erreichte Stufe im Rechnen-Teil
@@ -85,6 +89,7 @@ function leererStand() {
     laufendeRunde: null, // angefangene Lernrunde, damit eine Unterbrechung nichts kostet
     palastGesehen: {},   // Station -> true, sobald sie im Rundgang angesehen wurde
     blpGesehen: false,   // Kapitel der zwei Bauleitplaene einmal angesehen
+    eigeneFaecher: {},   // Faecher, die mit einer eigenen Kartendatei kommen
     eigeneKarten: [],    // eingelesene eigene Karten, bleiben nur auf diesem Geraet
     eigenePruefungen: [],// ganze Originalpruefungen: Name und Fragenfolge, nur hier
     uebernommen: {}
@@ -117,7 +122,30 @@ function laden() {
 }
 
 const karte = (id) => (STAND.karten[id] = STAND.karten[id] || { s: 0, d: 0, due: null, last: null, reps: 0, lapses: 0, ok: 0, fail: 0, seen: 0 });
-const istFaellig = (id) => { const k = STAND.karten[id]; return !k || !k.s || !k.due || k.due <= heute(); };
+const istFaellig = (id) => {
+  const k = STAND.karten[id];
+  if (!k || !k.s || !k.due || k.due <= heute()) return true;
+  /* Im Fokus gilt die Deckelung auch fuer Karten, die frueher schon weit
+     hinaus geplant wurden - sonst kaemen sie erst nach der Pruefung. */
+  const g = fokusGrenze();
+  return g !== null && !!k.last && tageZwischen(k.last, heute()) >= g;
+};
+
+/* Im Fokus zielt alles auf einen Pruefungstag. Dann darf keine Karte erst
+   NACH der Pruefung wiederkommen: FSRS allein parkt eine sofort gewusste
+   neue Karte rund 16 Tage. Fuer einen Test in wenigen Tagen liegt der beste
+   Abstand zwischen zwei Wiederholungen dagegen bei etwa einem Tag (Cepeda
+   u. a. 2008, Psychological Science: der guenstigste Abstand waechst mit der
+   Zeit bis zum Test). Deshalb hoechstens ein Drittel der Resttage und nie
+   ueber den Tag vor der Pruefung hinaus. Die Stabilitaet selbst bleibt
+   unberuehrt - nur der Termin rueckt nach vorn. */
+function fokusGrenze() {
+  const e = STAND.einst;
+  if (!e.fokus || !e.zielDatum) return null;
+  const rest = tageZwischen(heute(), e.zielDatum);
+  if (rest < 1) return null;
+  return Math.max(1, Math.min(rest - 1, Math.round(rest / 3)));
+}
 const istNeu = (id) => { const k = STAND.karten[id]; return !k || !k.s; };
 
 /* Note: 1 nicht gewusst, 2 unsicher, 3 gewusst, 4 sofort gewusst */
@@ -140,7 +168,10 @@ function bewerten(id, note) {
   }
   k.s = klemm(k.s, 0.01, 36500);
   k.last = h;
-  k.due = note === 1 ? h : tagePlusHeute(abstand(k.s));
+  let tage = abstand(k.s);
+  const grenze = fokusGrenze();
+  if (grenze !== null) tage = Math.min(tage, grenze);
+  k.due = note === 1 ? h : tagePlusHeute(tage);
   STAND.tage[h] = (STAND.tage[h] || 0) + 1;
   k.punkte = note === 1 ? 1 : note;        // auch ein Fehlversuch zaehlt, er war Arbeit
   STAND.punkte = (STAND.punkte || 0) + k.punkte;
