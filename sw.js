@@ -1,8 +1,8 @@
 /* Damit der Trainer auch ohne Netz laeuft.
    Bei jeder Aenderung die Nummer hochzaehlen, sonst behaelt das Handy die alte Fassung. */
-const LAGER = 'sv-trainer-13';
-const DATEIEN = ['./', 'index.html?v=13', 'stil.css?v=13', 'daten-pruefung.js?v=13', 'daten-rechenwege.js?v=13',
-                 'daten-palast.js?v=13', 'daten-gesetz.js?v=13', 'daten-bauleitplanung.js?v=13', 'planer.js?v=13', 'karten.js?v=13', 'app.js?v=13', 'ertragswert.html', 'manifest.webmanifest?v=13', 'cover.png?v=13'];
+const LAGER = 'sv-trainer-14';
+const DATEIEN = ['./', 'index.html?v=14', 'stil.css?v=14', 'daten-pruefung.js?v=14', 'daten-rechenwege.js?v=14',
+                 'daten-palast.js?v=14', 'daten-gesetz.js?v=14', 'daten-bauleitplanung.js?v=14', 'planer.js?v=14', 'karten.js?v=14', 'app.js?v=14', 'ertragswert.html', 'manifest.webmanifest?v=14', 'cover.png?v=14'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(LAGER).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting()));
@@ -19,6 +19,6 @@ self.addEventListener('fetch', e => {
         caches.open(LAGER).then(c => c.put(e.request, kopie));
       }
       return a;
-    }).catch(() => caches.match(e.request).then(a => a || caches.match('index.html?v=13')))
+    }).catch(() => caches.match(e.request).then(a => a || caches.match('index.html?v=14')))
   );
 });

@@ -1988,7 +1988,10 @@ function vEinstellungen(b) {
 
   const eingabe = el('input');
   eingabe.type = 'file';
-  eingabe.accept = '.json,application/json';
+  /* Am Handy liefert die OneDrive-App eine .json-Datei nicht immer als
+     application/json aus - mit dem engen Filter waere sie im Auswahlfenster
+     grau und nicht antippbar. Der Inhalt wird beim Einlesen ohnehin geprueft. */
+  eingabe.accept = '.json,application/json,text/plain,application/octet-stream';
   eingabe.style.cssText = 'font-size:.85rem;width:100%;max-width:none';
   eingabe.onchange = () => {
     const datei = eingabe.files && eingabe.files[0];
