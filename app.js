@@ -754,6 +754,14 @@ const stufeVon = (kid) => STAND.stufen[kid] || 0;
 function vRechnen(b) {
   kopf('Rechnen', 'Die Rechenwege Schritt für Schritt');
   b.appendChild(el('p', 'hin', 'Wähle eine Kette. Ein Schritt je Bildschirm, mit Fundstelle, Merkbild und Erklärung daneben.'));
+  // Eigene Seite ertragswert.html: immer neue Aufgaben mit anderen Zahlen, eigener Lernstand
+  const ue = el('button', 'kachel');
+  ue.style.borderLeftColor = '#2552b0';
+  ue.appendChild(el('b', null, 'Ertragswert üben: neue Aufgaben'));
+  ue.appendChild(el('small', null, 'Wie im Schulheft: jedes Mal ein anderes Haus, andere Zahlen. Fünf Stufen vom Vorrechnen bis aus dem Kopf.'));
+  ue.appendChild(el('div', 'zeile2', 'eigene Seite mit eigenem Lernstand'));
+  ue.onclick = () => { location.href = 'ertragswert.html'; };
+  b.appendChild(ue);
   KETTEN.forEach(kt => {
     const st = stufeVon(kt.id);
     const k = el('button', 'kachel');

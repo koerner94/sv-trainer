@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#14263f">
+<link rel="icon" href="cover.png">
+</head>
+<body>
+<title>Ertragswert-Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: eine Spalte wie ein Schulheft. Karopapier für alles, was gerechnet wird, Rotstift für Korrekturen, Füllerblau für die Tinte. */
+:root{
+  --bg:#e9eef4;
+  --flaeche:#ffffff;
+  --papier:#fcfdfe;
+  --karo:#dbe4ef;
+  --tinte:#1b2b44;
+  --tinte2:#56657c;
+  --linie:#cdd7e3;
+  --blau:#2552b0;
+  --auf-blau:#ffffff;
+  --blau-hell:#e3ebfb;
+  --rot:#c2382c;
+  --rot-hell:#fbe7e4;
+  --gruen:#2b7748;
+  --gruen-hell:#e2f3e8;
+  --marker:#fff1a8;
+  --f-text:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-hand:"Caveat","Segoe Print","Comic Sans MS",cursive;
+  --f-zahl:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f141b;--flaeche:#18202b;--papier:#151c26;--karo:#222c39;--tinte:#e2e8f1;--tinte2:#9cabbf;--linie:#2c3746;
+    --blau:#8fb1ff;--auf-blau:#0c1420;--blau-hell:#1d2a44;--rot:#ff8c7c;--rot-hell:#3a1f1c;--gruen:#78d4a0;--gruen-hell:#16301f;--marker:rgba(255,222,90,.22);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f141b;--flaeche:#18202b;--papier:#151c26;--karo:#222c39;--tinte:#e2e8f1;--tinte2:#9cabbf;--linie:#2c3746;
+  --blau:#8fb1ff;--auf-blau:#0c1420;--blau-hell:#1d2a44;--rot:#ff8c7c;--rot-hell:#3a1f1c;--gruen:#78d4a0;--gruen-hell:#16301f;--marker:rgba(255,222,90,.22);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--tinte);font-family:var(--f-text);font-size:17px;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:18px 56px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.2}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--blau);outline-offset:2px}
+.zahl{font-family:var(--f-zahl);font-variant-numeric:tabular-nums}
+.klein{font-size:.86rem;color:var(--tinte2)}
+.hand{font-family:var(--f-hand);font-weight:700}
+
+/* Kopf */
+.kopf{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px;margin-bottom:16px}
+.kopf h1{font-size:1.35rem;letter-spacing:-.01em}
+.zurueck-link{font-size:.84rem;color:var(--blau)}
+.kopf .unter{font-size:.82rem;color:var(--tinte2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--flaeche);border:1px solid var(--linie);font-size:.84rem;white-space:nowrap;position:relative}
+.chip b{font-family:var(--f-zahl);font-weight:600}
+.plus{position:absolute;right:4px;top:-6px;font-family:var(--f-hand);font-size:1.3rem;color:var(--gruen);pointer-events:none;animation:hoch 1.1s ease-out forwards}
+@keyframes hoch{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-26px)}}
+@media (prefers-reduced-motion: reduce){.plus{animation:none;opacity:0}}
+
+/* Karten */
+.karte{background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;padding:20px}
+.heute{display:grid;gap:14px}
+.stufe-titel{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.stufe-titel h2{font-size:1.5rem}
+.leiter{display:flex;gap:6px;align-items:center}
+.leiter span{width:30px;height:8px;border-radius:2px;background:var(--karo)}
+.leiter span.da{background:var(--blau)}
+.leiter span.jetzt{background:var(--blau);box-shadow:0 0 0 2px var(--blau-hell)}
+.knopf{display:block;width:100%;border:0;border-radius:10px;background:var(--blau);color:var(--auf-blau);padding:18px 20px;font-size:1.2rem;font-weight:700;text-align:center}
+.knopf small{display:block;font-weight:400;font-size:.9rem;opacity:.85;margin-top:2px}
+.knopf:hover{filter:brightness(1.07)}
+.knopf2{border:1px solid var(--linie);background:var(--flaeche);border-radius:8px;padding:10px 16px;font-weight:700}
+.knopf2:hover{border-color:var(--blau)}
+.linkknopf{border:0;background:none;padding:0;color:var(--tinte2);text-decoration:underline;text-underline-offset:3px;font-size:.88rem}
+.knopfreihe{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.hinweis{font-size:.92rem;color:var(--tinte2)}
+
+/* Nebenwege */
+.neben{margin-top:22px;display:grid;gap:10px}
+details.fach{background:var(--flaeche);border:1px solid var(--linie);border-radius:10px}
+details.fach>summary{list-style:none;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;font-weight:700}
+details.fach>summary::-webkit-details-marker{display:none}
+details.fach>summary::after{content:"+";font-family:var(--f-zahl);color:var(--tinte2);font-size:1.2rem}
+details.fach[open]>summary::after{content:"−"}
+.marke{font-weight:400;font-size:.76rem;letter-spacing:.04em;text-transform:uppercase;color:var(--tinte2);border:1px solid var(--linie);border-radius:4px;padding:1px 6px;margin-left:8px;white-space:nowrap}
+.fach-inhalt{padding:0 18px 18px;display:grid;gap:14px}
+
+/* Karopapier */
+.karo{background-color:var(--papier);background-image:linear-gradient(var(--karo) 1px,transparent 1px),linear-gradient(90deg,var(--karo) 1px,transparent 1px);background-size:22px 22px;background-position:-1px -1px;border:1px solid var(--linie);border-radius:6px;position:relative}
+.heft{padding:14px 14px 16px 30px}
+.heft::before{content:"";position:absolute;left:18px;top:0;bottom:0;width:2px;background:var(--rot);opacity:.45}
+
+/* Schriftliche Rechnung (Spickzettel) */
+.rechnung{display:grid;grid-template-columns:1.6em minmax(0,1fr);row-gap:2px}
+.rechnung .op{font-family:var(--f-zahl);font-weight:600;color:var(--rot);text-align:center;padding-top:6px}
+.rechnung .zeile{padding:6px 0;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;min-width:0}
+.rechnung .zeile.erg{border-top:2px solid var(--tinte)}
+.rechnung .name{font-weight:700}
+.rechnung .fml{font-family:var(--f-zahl);font-size:.85rem;color:var(--tinte2)}
+.merk{border-left:3px solid var(--marker);background:var(--papier);padding:10px 14px;border-radius:0 6px 6px 0}
+.merk .hand{font-size:1.35rem;color:var(--blau);line-height:1.15}
+.formelbox{font-family:var(--f-zahl);background:var(--papier);border:1px dashed var(--linie);border-radius:6px;padding:10px 12px;font-size:.92rem;overflow-x:auto}
+
+/* Lauf */
+.laufkopf{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.balken{display:flex;gap:3px;margin-bottom:14px}
+.balken span{flex:1;height:9px;border-radius:2px;background:var(--karo)}
+.balken span.ok{background:var(--gruen)}
+.balken span.korr{background:var(--rot)}
+.balken span.jetzt{background:var(--blau)}
+.angaben{margin-bottom:14px}
+.angaben>summary{padding:12px 16px}
+.angaben .fach-inhalt{padding:0 16px 16px}
+.tab{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;font-size:.95rem}
+.tab dt{color:var(--tinte2)}
+.tab dd{margin:0;text-align:right;font-family:var(--f-zahl);font-variant-numeric:tabular-nums}
+.prosa{margin:0;max-width:65ch}
+.prosa mark{background:var(--marker);color:inherit;padding:0 2px;border-radius:2px}
+
+.zettel{display:grid;gap:0}
+.zl{display:grid;grid-template-columns:minmax(0,1fr) auto 1.6em;gap:4px 10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--karo)}
+.zl .n{font-weight:700;min-width:0}
+.zl .e{display:block;font-weight:400;font-family:var(--f-zahl);font-size:.8rem;color:var(--tinte2);overflow-wrap:anywhere}
+.zl .w{font-family:var(--f-zahl);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.zl .m{font-family:var(--f-hand);font-size:1.4rem;line-height:1;text-align:center}
+.zl .m.ok{color:var(--gruen)}
+.zl .m.korr{color:var(--rot)}
+.zettel-leer{color:var(--tinte2);font-size:.9rem;padding:6px 0}
+
+.schritt{margin-top:14px;background:var(--flaeche);border:2px solid var(--blau);border-radius:8px;padding:16px;display:grid;gap:12px}
+.schritt .kopfzeile{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;align-items:baseline}
+.schritt h3{font-size:1.3rem}
+.schritt .par{font-size:.82rem;color:var(--tinte2)}
+.amtlich{font-size:.86rem;color:var(--tinte2);margin-top:-8px}
+.fml-zeile{font-family:var(--f-zahl);font-size:.95rem;background:var(--blau-hell);border-radius:6px;padding:8px 10px;overflow-wrap:anywhere}
+.fml-zeile .lab{font-family:var(--f-text);font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--tinte2);display:block}
+.eingabe{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.eingabe .feld{flex:1 1 200px;display:flex;align-items:center;border:2px solid var(--linie);border-radius:8px;background:var(--papier);padding:0 12px;min-width:0}
+.eingabe .feld:focus-within{border-color:var(--blau)}
+.eingabe input{flex:1;min-width:0;border:0;background:transparent;color:var(--tinte);font-family:var(--f-zahl);font-size:1.35rem;padding:12px 0;outline:none}
+.eingabe .einh{color:var(--tinte2);font-family:var(--f-zahl);padding-left:8px;white-space:nowrap}
+.eingabe .knopf{width:auto;flex:0 0 auto;padding:12px 22px;font-size:1.05rem}
+.rueck{border-radius:8px;padding:12px 14px;display:grid;gap:6px}
+.rueck.gut{background:var(--gruen-hell)}
+.rueck.schlecht{background:var(--rot-hell)}
+.rueck .hand{font-size:1.6rem;line-height:1}
+.rueck.gut .hand{color:var(--gruen)}
+.rueck.schlecht .hand{color:var(--rot)}
+.warum{font-size:.93rem}
+.warum summary{cursor:pointer;color:var(--blau);font-weight:700}
+.warum p{margin:.4em 0 0}
+.wahl{display:grid;gap:8px}
+.wahl button{text-align:left;border:2px solid var(--linie);background:var(--papier);border-radius:8px;padding:12px 14px;font-weight:700}
+.wahl button:hover:not(:disabled){border-color:var(--blau)}
+.wahl button:disabled{opacity:.5;text-decoration:line-through;cursor:default}
+
+/* Ende */
+.ergebnis{text-align:center;padding:26px 16px}
+.ergebnis .hand{font-size:2.2rem;color:var(--gruen)}
+.vw{display:inline-block;font-family:var(--f-zahl);font-size:clamp(1.6rem,6vw,2.3rem);font-weight:600;border-bottom:3px double var(--rot);padding:0 6px 2px;margin:6px 0 4px}
+.bilanz{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.bilanz div{background:var(--papier);border:1px solid var(--linie);border-radius:8px;padding:10px 12px;text-align:left}
+.bilanz b{display:block;font-family:var(--f-zahl);font-size:1.3rem}
+
+/* Rechner */
+.formular{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 12px}
+.formular label{display:grid;gap:3px;font-size:.84rem;color:var(--tinte2);min-width:0}
+.formular input,.formular select{width:100%;min-width:0;border:1px solid var(--linie);border-radius:6px;background:var(--papier);color:var(--tinte);font-family:var(--f-zahl);font-size:1rem;padding:8px 10px}
+.formular select{font-family:var(--f-text)}
+.gruppe{font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;color:var(--tinte2);grid-column:1/-1;margin-top:6px}
+.aufteilung{display:flex;height:26px;border-radius:5px;overflow:hidden;border:1px solid var(--linie)}
+.aufteilung div{display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;color:var(--auf-blau);white-space:nowrap;overflow:hidden;min-width:0}
+.legende{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--tinte2)}
+.legende i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.schwach li{margin:2px 0}
+.stufenwahl{display:flex;flex-wrap:wrap;gap:6px}
+.stufenwahl button{border:1px solid var(--linie);background:var(--papier);border-radius:6px;padding:6px 10px;font-size:.88rem}
+.stufenwahl button.an{border-color:var(--blau);background:var(--blau-hell);font-weight:700}
+@media (max-width:480px){
+  body{font-size:16px}
+  .karte{padding:16px}
+  .heft{padding-left:26px}
+  .heft::before{left:14px}
+  .eingabe .knopf{width:100%}
+}
+</style>
+
+<div class="wrap">
+  <header class="kopf">
+    <div>
+      <h1>Ertragswert-Trainer</h1>
+      <div class="unter">Allgemeines Ertragswertverfahren · §§ 27 bis 34 ImmoWertV</div>
+      <a class="zurueck-link" href="./">← SV-Trainer</a>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+  <main id="app"></main>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Grundwerte ---------- */
+const GND = 80, STICHTAG = 2026;
+const SPEICHER = 'etw-trainer-v1', RSPEICHER = 'etw-rechner-v1', DOC = 'lernstand/haupt';
+
+const STUFEN = [
+  {name:'Zuschauen',     kurz:'Ich rechne dir eine Aufgabe vor. Du klickst dich Schritt für Schritt durch und liest mit.'},
+  {name:'Mit Geländer',  kurz:'Formel und Zahlen stehen schon da. Du rechnest nur aus (Taschenrechner erlaubt).'},
+  {name:'Mit Formel',    kurz:'Die Formel steht da. Die Zahlen suchst du dir selbst aus der Aufgabe.'},
+  {name:'Nur der Name',  kurz:'Du siehst nur, welcher Schritt dran ist. Die Formel musst du wissen. Wenn es hakt: Tipp-Knopf.'},
+  {name:'Aus dem Kopf',  kurz:'Du entscheidest selbst, welcher Schritt als Nächstes kommt, und rechnest ihn. So wie in der Prüfung.'}
+];
+
+/* Jeder Schritt: Name, amtlicher Name, Fundstelle, Formel, Merkbild (aus dem SV-Trainer), Warum, Falle. */
+const SCHRITTE = {
+  wfl:  {name:'Wohnfläche gesamt', art:'qm', par:'Bezugsgröße', braucht:[],
+         formel:'Anzahl × Fläche je Wohnung, alle Wohnungen zusammen',
+         merk:'Erst die Fläche, dann die Miete.',
+         warum:'Die Miete wird je Quadratmeter angegeben. Also brauchst du zuerst die gesamte Wohnfläche aller Wohnungen.',
+         falle:'Nur eine Wohnungsgruppe gezählt und die andere vergessen.'},
+  roh:  {name:'Rohertrag', art:'eurj', par:'§ 31 Abs. 2', braucht:['wfl'],
+         formel:'Wohnfläche × Miete je m² und Monat × 12',
+         merk:'Nike steht auf dem Dach und zählt die Mieten. Aber nur die, die am Markt zu erzielen sind.',
+         warum:'Der Rohertrag ist die Jahres-Nettokaltmiete, die man bei ordnungsgemäßer Bewirtschaftung am Markt erzielen kann. Die Miete ist je Monat angegeben, deshalb mal 12.',
+         falle:'Die tatsächlich gezahlte Miete statt der marktüblichen genommen, oder die 12 Monate vergessen.'},
+  bwk:  {name:'Bewirtschaftungskosten', art:'eurj', par:'§ 32', braucht:['roh'],
+         formel:'Verwaltung + Instandhaltung + Mietausfallwagnis',
+         merk:'Die Motte frisst Löcher in den Geldstapel: Verwaltung, Instandhaltung, Mietausfallwagnis.',
+         warum:'Das sind die Kosten, die der Eigentümer selbst trägt. Umlegbare Betriebskosten zahlt der Mieter, die gehören nicht hierher. Die Ansätze kommen aus dem Modell des Gutachterausschusses, das zum Liegenschaftszinssatz gehört.',
+         falle:'Zins und Tilgung abgezogen. Die Finanzierung des Eigentümers gehört nie dazu.'},
+  rein: {name:'Reinertrag', art:'eurj', par:'§ 31 Abs. 1', braucht:['roh','bwk'],
+         formel:'Rohertrag − Bewirtschaftungskosten',
+         merk:'Was die Motte vom Geldstapel übrig lässt, ist der Reinertrag.',
+         warum:'Das ist der Überschuss pro Jahr, den das ganze Grundstück abwirft, Boden und Gebäude zusammen.',
+         falle:'Kosten addiert statt abgezogen.'},
+  boden:{name:'Bodenwert', art:'eur', par:'§§ 40 bis 45', braucht:[],
+         formel:'Grundstücksfläche × Bodenrichtwert',
+         merk:'Die Rose steht auf nackter Erde: Der Boden wird bewertet, als wäre er unbebaut.',
+         warum:'Der Bodenwert wird im Ertragswertverfahren zweimal gebraucht: einmal für die Bodenwertverzinsung und ganz am Ende als voller Betrag.',
+         falle:'Den Bodenwert nur geschätzt, weil er ja am Ende wieder draufkommt. Er wirkt aber zweimal.'},
+  bvz:  {name:'Bodenwertverzinsung', amtlich:'Bodenwertverzinsungsbetrag', art:'eurj', par:'§ 28', braucht:['boden'],
+         formel:'Bodenwert × Liegenschaftszinssatz',
+         merk:'Der Neffe am Küchentisch zieht zuerst die Verzinsung des Bodens ab. Der Boden verdient sein eigenes Geld.',
+         warum:'Ein Teil des Reinertrags gehört dem Boden, nicht dem Gebäude. Der Boden altert nie, deshalb wird sein Anteil herausgerechnet.',
+         falle:'Den Prozentsatz nicht durch 100 geteilt, oder einen anderen Zinssatz genommen als später beim Barwertfaktor. Es ist beide Male derselbe Liegenschaftszinssatz.'},
+  rea:  {name:'Gebäudereinertrag', amtlich:'Reinertragsanteil der baulichen Anlagen', art:'eurj', par:'§ 28', braucht:['rein','bvz'],
+         formel:'Reinertrag − Bodenwertverzinsung',
+         merk:'Was nach dem Abzug übrig bleibt, gehört dem Gebäude.',
+         warum:'Nur dieser Teil wird über die Restnutzungsdauer kapitalisiert, denn nur so lange gibt es das Gebäude noch.',
+         falle:'Den ganzen Reinertrag kapitalisiert. Das wäre das vereinfachte Verfahren nach § 29.'},
+  rnd:  {name:'Restnutzungsdauer', art:'jahre', par:'§ 4 Abs. 3', braucht:[],
+         formel:'Gesamtnutzungsdauer − Alter am Stichtag',
+         merk:'Über dem Reh schwebt die Sanduhr. Oben der Sand, der noch kommt: die Restnutzungsdauer.',
+         warum:'Ohne Modernisierung ganz einfach: Gesamtnutzungsdauer minus Alter. Für Mehrfamilienhäuser nennt Anlage 1 ImmoWertV 80 Jahre.',
+         falle:'Das Alter statt der Restnutzungsdauer genommen, oder mit der Gesamtnutzungsdauer weitergerechnet.'},
+  bwf:  {name:'Barwertfaktor', art:'faktor', par:'§ 34 Abs. 2', braucht:['rnd'],
+         formel:'(qⁿ − 1) ÷ (qⁿ × (q − 1)), mit q = 1 + Zinssatz ÷ 100 und n = Restnutzungsdauer',
+         merk:'Das Meer: so viele Wellen wie Jahre Restnutzungsdauer. Weit draußen werden sie flacher, weil späteres Geld heute weniger wert ist.',
+         warum:'Der Faktor rechnet alle künftigen Jahreserträge auf heute um. Auf 2 Nachkommastellen runden, so wie in den Tabellen.',
+         falle:'Mit der Gesamtnutzungsdauer gerechnet statt mit der Restnutzungsdauer.'},
+  ewg:  {name:'Gebäudeertragswert', amtlich:'vorläufiger Ertragswert der baulichen Anlagen', art:'eur', par:'§ 28', braucht:['rea','bwf'],
+         formel:'Gebäudereinertrag × Barwertfaktor',
+         merk:'Der Neffe multipliziert, was dem Gebäude gehört, mit dem Meer.',
+         warum:'Das ist der heutige Wert aller Gebäude-Erträge bis zum Ende der Restnutzungsdauer. Noch ohne Boden.',
+         falle:'Hier schon den Bodenwert addiert. Der kommt erst im nächsten Schritt.'},
+  vorl: {name:'vorläufiger Ertragswert', art:'eur', par:'§ 28', braucht:['ewg','boden'],
+         formel:'Gebäudeertragswert + Bodenwert',
+         merk:'Ganz am Ende legt der Neffe den Boden wieder obendrauf.',
+         warum:'Der Boden geht mit dem Gebäude nicht unter, deshalb kommt er voll dazu. Die Marktanpassung steckt schon im Liegenschaftszinssatz. Der vorläufige Ertragswert ist also zugleich der marktangepasste.',
+         falle:'Noch einen pauschalen Marktzuschlag draufgesetzt. Das wäre eine doppelte Marktanpassung.'},
+  ew:   {name:'Ertragswert', amtlich:'nach besonderen objektspezifischen Grundstücksmerkmalen (boG)', art:'eur', par:'§ 8 Abs. 3', braucht:['vorl'],
+         formel:'vorläufiger Ertragswert ± boG (z. B. Instandhaltungsstau)',
+         merk:'Die Fee tippt das Dach an, es leuchtet rot: Der Schaden kommt ganz zum Schluss weg.',
+         warum:'Besonderheiten, die nur dieses Objekt hat, zum Beispiel ein Reparaturstau, werden erst nach der Marktanpassung berücksichtigt.',
+         falle:'Den Stau schon bei den Bewirtschaftungskosten abgezogen. Dann zählt er doppelt.'},
+  vw:   {name:'Verkehrswert', art:'eur', par:'§ 194 BauGB', braucht:['ew'],
+         formel:'Ertragswert, sinnvoll gerundet',
+         merk:'Ergebnis doppelt unterstreichen. Und runden.',
+         warum:'Ein Verkehrswert auf den Euro genau täuscht eine Genauigkeit vor, die es nicht gibt.',
+         falle:'Den Wert auf den Euro genau angegeben.'}
+};
+
+/* Typische Denkfehler als falsche Möglichkeiten in Stufe 4 */
+const FEHLSCHRITTE = [
+  {t:'Zins und Tilgung abziehen', w:'Die Finanzierung des Eigentümers gehört nie in die Bewertung.'},
+  {t:'Bodenwert abzinsen', w:'Das gehört zum vereinfachten Verfahren (§ 29). Im allgemeinen Verfahren kommt der Boden voll dazu.'},
+  {t:'Sachwertfaktor anwenden', w:'Der gehört zum Sachwertverfahren. Beim Ertragswert steckt der Markt schon im Liegenschaftszinssatz.'},
+  {t:'Pauschalen Marktzuschlag aufschlagen', w:'Doppelte Marktanpassung. Der Liegenschaftszinssatz enthält den Markt schon.'},
+  {t:'Umlagen zum Rohertrag addieren', w:'Umlegbare Betriebskosten zahlt der Mieter. Sie gehören nicht in den Rohertrag.'},
+  {t:'Barwertfaktor mit der Gesamtnutzungsdauer bilden', w:'Kapitalisiert wird nur über die Restnutzungsdauer.'}
+];
+
+const ORTE = ['Herne','Bochum-Langendreer','Dortmund-Hörde','Gelsenkirchen-Buer','Recklinghausen','Essen-Rüttenscheid','Castrop-Rauxel','Witten','Herten','Oberhausen-Sterkrade','Hattingen','Marl','Datteln','Unna'];
+const BOG_ARTEN = [
+  ['Das Dach ist schadhaft. Der Instandhaltungsstau beträgt','Instandhaltungsstau Dach'],
+  ['Die Heizung muss erneuert werden. Die Kosten betragen','Heizung erneuern'],
+  ['Die Fenster sind verschlissen. Der Austausch kostet','Fenster erneuern'],
+  ['Die Fassade hat Risse. Die Beseitigung kostet','Fassadenschäden']
+];
+
+/* Das Beispiel aus dem SV-Trainer und dem Podcast: dieselben Zahlen, dasselbe Ergebnis. */
+const BEISPIEL = {
+  ort:'Beispielstadt', beispiel:true, nWhg:6, wfl:500, einheiten:null, miete:10, istMiete:null,
+  bwk:{art:'einzeln', verw:350, inst:13.4, maw:2}, grund:600, brw:350, lz:4, rnd:40, baujahr:1986, rndAusAlter:false,
+  bog:{betrag:-35000, satz:'Das Dach ist überfällig. Der Instandhaltungsstau beträgt', kurz:'Instandhaltungsstau Dach'}
+};
+
+/* ---------- Zahlen ---------- */
+const nf = (x,d) => Number(x).toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const c2 = x => Math.round(x*100)/100;
+const fe = x => { x = c2(x); return nf(x, Number.isInteger(x) ? 0 : 2); };
+const fq = x => nf(x, Number.isInteger(x) ? 0 : 2);
+const fp = x => nf(x, Number.isInteger(x) ? 0 : (Number.isInteger(Math.round(x*1000)/100) ? 1 : 2));
+const fm = x => nf(x, 2);
+const einheit = art => ({eurj:'€/Jahr', eur:'€', qm:'m²', jahre:'Jahre', faktor:''}[art]);
+function wertText(id, v){
+  const a = SCHRITTE[id].art;
+  if (a === 'faktor') return nf(v,2);
+  if (a === 'qm') return fq(v) + ' m²';
+  if (a === 'jahre') return nf(v,0) + ' Jahre';
+  return fe(v) + ' €';
+}
+function lies(s){
+  s = String(s || '').trim().replace(/€|%|m²|m2|eur|jahre?|\s/gi,'').replace(/−/g,'-');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g,'').replace(',','.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,'');
+  return Number(s);
+}
+const nah = (x, soll) => Math.abs(x - soll) <= Math.max(1, Math.abs(soll) * 0.0005);
+function stimmt(id, x, W){
+  const a = SCHRITTE[id].art, soll = W[id];
+  if (a === 'faktor') return Math.abs(x - soll) <= 0.015;
+  if (a === 'jahre' || a === 'qm' || id === 'vw') return Math.abs(x - soll) < 0.5;
+  return nah(x, soll);
+}
+function rundStufe(x){ return Math.abs(x) < 250000 ? 1000 : (Math.abs(x) < 1000000 ? 5000 : 10000); }
+function barwert(p, n){ const q = 1 + p/100, qn = Math.pow(q, n); return (qn - 1) / (qn * (q - 1)); }
+
+/* ---------- Die eine Rechnung: für Übung und Rechner dieselbe ---------- */
+function rechne(A){
+  const W = {};
+  W.wfl = A.wfl;
+  W.roh = c2(W.wfl * A.miete * 12);
+  W.bwk = c2(A.bwk.art === 'pauschal' ? W.roh * A.bwk.pct / 100
+          : A.nWhg * A.bwk.verw + W.wfl * A.bwk.inst + W.roh * A.bwk.maw / 100);
+  W.rein = c2(W.roh - W.bwk);
+  W.boden = c2(A.grund * A.brw);
+  W.bvz = c2(W.boden * A.lz / 100);
+  W.rea = c2(W.rein - W.bvz);
+  W.rnd = A.rnd;
+  W.bwfExakt = barwert(A.lz, A.rnd);
+  W.bwf = Math.round(W.bwfExakt * 100) / 100;
+  W.ewg = c2(W.rea * W.bwf);
+  W.vorl = c2(W.ewg + W.boden);
+  W.bog = A.bog ? A.bog.betrag : 0;
+  W.ew = c2(W.vorl + W.bog);
+  W.rundung = rundStufe(W.ew);
+  W.vw = Math.round(W.ew / W.rundung) * W.rundung;
+  return W;
+}
+function reiheVon(A){
+  const r = [];
+  if (A.einheiten && A.einheiten.length > 1) r.push('wfl');
+  r.push('roh','bwk','rein','boden','bvz','rea');
+  if (A.rndAusAlter) r.push('rnd');
+  r.push('bwf','ewg','vorl','ew','vw');
+  return r;
+}
+function formelVon(id, A){
+  if (id === 'bwk' && A.bwk.art === 'pauschal') return 'Prozentsatz × Rohertrag';
+  return SCHRITTE[id].formel;
+}
+function eingesetzt(id, A, W){
+  const q = 1 + A.lz/100;
+  switch(id){
+    case 'wfl': return A.einheiten.map(e => e.n + ' × ' + fq(e.qm) + ' m²').join(' + ');
+    case 'roh': return fq(W.wfl) + ' m² × ' + fm(A.miete) + ' €/m² × 12';
+    case 'bwk': return A.bwk.art === 'pauschal'
+      ? fp(A.bwk.pct) + ' % × ' + fe(W.roh) + ' €'
+      : A.nWhg + ' × ' + fe(A.bwk.verw) + ' € + ' + fq(W.wfl) + ' m² × ' + fm(A.bwk.inst) + ' € + ' + fp(A.bwk.maw) + ' % × ' + fe(W.roh) + ' €';
+    case 'rein': return fe(W.roh) + ' € − ' + fe(W.bwk) + ' €';
+    case 'boden': return fq(A.grund) + ' m² × ' + fe(A.brw) + ' €/m²';
+    case 'bvz': return fe(W.boden) + ' € × ' + fp(A.lz) + ' %';
+    case 'rea': return fe(W.rein) + ' € − ' + fe(W.bvz) + ' €';
+    case 'rnd': return GND + ' Jahre − (' + STICHTAG + ' − ' + A.baujahr + ') Jahre';
+    case 'bwf': { const qn = Math.pow(q, A.rnd);
+      return 'q = ' + nf(q,4) + ', n = ' + A.rnd + ', qⁿ = ' + nf(qn,4) + ' → (' + nf(qn,4) + ' − 1) ÷ (' + nf(qn,4) + ' × ' + nf(q-1,4) + ')'; }
+    case 'ewg': return fe(W.rea) + ' € × ' + nf(W.bwf,2);
+    case 'vorl': return fe(W.ewg) + ' € + ' + fe(W.boden) + ' €';
+    case 'ew': return A.bog ? fe(W.vorl) + ' € − ' + fe(-A.bog.betrag) + ' € (' + A.bog.kurz + ')' : fe(W.vorl) + ' € ± 0 € (keine boG)';
+    case 'vw': return fe(W.ew) + ' € auf volle ' + fe(W.rundung) + ' € gerundet';
+  }
+  return '';
+}
+/* Rotstift: typische Fehler erkennen und benennen */
+function diagnose(id, x, A, W){
+  const q = 1 + A.lz/100, qn = Math.pow(q, A.rnd);
+  switch(id){
+    case 'roh':
+      if (nah(x, W.roh/12)) return 'Das ist die Monatsmiete. Der Rohertrag gilt für ein ganzes Jahr: mal 12.';
+      if (A.istMiete && nah(x, W.wfl*A.istMiete*12)) return 'Du hast die tatsächlich gezahlte Miete genommen. Nike zählt die marktübliche.';
+      break;
+    case 'bwk':
+      if (A.bwk.art === 'einzeln' && nah(x, W.bwk - W.roh*A.bwk.maw/100)) return 'Das Mietausfallwagnis fehlt: ' + fp(A.bwk.maw) + ' % vom Rohertrag.';
+      if (A.bwk.art === 'einzeln' && nah(x, W.bwk - A.nWhg*A.bwk.verw)) return 'Die Verwaltungskosten fehlen: Anzahl Wohnungen × Betrag je Wohnung.';
+      if (A.bwk.art === 'einzeln' && nah(x, W.bwk - W.wfl*A.bwk.inst)) return 'Die Instandhaltung fehlt: Wohnfläche × Betrag je m².';
+      if (nah(x, W.roh - W.bwk)) return 'Das ist schon der Reinertrag. Gefragt sind nur die Kosten.';
+      break;
+    case 'rein':
+      if (nah(x, W.roh + W.bwk)) return 'Die Kosten werden abgezogen, nicht addiert.';
+      break;
+    case 'boden':
+      if (nah(x, A.grund * A.brw * 12)) return 'Beim Bodenwert gibt es keine 12 Monate. Fläche × Bodenrichtwert.';
+      break;
+    case 'bvz':
+      if (nah(x, W.boden * A.lz)) return 'Prozent heißt: durch 100 teilen. ' + fp(A.lz) + ' % sind ' + nf(A.lz/100,4).replace(/0+$/,'') + '.';
+      if (nah(x, W.rein * A.lz / 100)) return 'Verzinst wird der Bodenwert, nicht der Reinertrag.';
+      break;
+    case 'rea':
+      if (nah(x, W.rein)) return 'Die Bodenwertverzinsung muss noch vom Reinertrag weg.';
+      if (nah(x, W.rein + W.bvz)) return 'Abziehen, nicht addieren.';
+      if (nah(x, W.rein - W.boden)) return 'Abgezogen wird nur die Verzinsung des Bodens, nicht der ganze Bodenwert.';
+      break;
+    case 'rnd':
+      if (A.baujahr && Math.abs(x - (STICHTAG - A.baujahr)) < 0.5) return 'Das ist das Alter. Gesucht ist, was noch übrig ist: 80 minus Alter.';
+      if (Math.abs(x - GND) < 0.5) return 'Das ist die Gesamtnutzungsdauer. Zieh das Alter noch ab.';
+      break;
+    case 'bwf':
+      if (Math.abs(x - barwert(A.lz, GND)) <= 0.015) return 'Das ist der Faktor für 80 Jahre. Nimm die Restnutzungsdauer.';
+      if (Math.abs(x - 1/qn) <= 0.01) return 'Das ist der Abzinsungsfaktor. Gesucht ist der Barwertfaktor (Rentenbarwert).';
+      if (Math.abs(x - qn) <= 0.01) return 'Das ist nur qⁿ. Setz es noch in die Formel ein.';
+      break;
+    case 'ewg':
+      if (nah(x, W.ewg + W.boden)) return 'Den Bodenwert erst im nächsten Schritt addieren.';
+      if (nah(x, W.rein * W.bwf)) return 'Du hast den ganzen Reinertrag genommen. Kapitalisiert wird nur der Gebäudereinertrag.';
+      break;
+    case 'vorl':
+      if (nah(x, W.ewg)) return 'Der Bodenwert fehlt noch.';
+      if (nah(x, W.ewg + W.boden/qn)) return 'Das ist der abgezinste Bodenwert, also das vereinfachte Verfahren. Hier kommt der Boden voll dazu.';
+      break;
+    case 'ew':
+      if (A.bog && nah(x, W.vorl - A.bog.betrag)) return 'Der Schaden mindert den Wert. Abziehen, nicht addieren.';
+      if (A.bog && nah(x, W.vorl)) return 'Die boG fehlt noch: ' + A.bog.kurz + '.';
+      break;
+    case 'vw':
+      if (nah(x, W.ew) && Math.abs(x - W.vw) >= 0.5) return 'Fast. Jetzt noch auf volle ' + fe(W.rundung) + ' € runden.';
+      if ([1000,5000,10000].some(s => Math.abs(x - Math.round(W.ew/s)*s) < 0.5)) return 'Richtig gerundet, aber auf die falsche Stufe. Hier: auf volle ' + fe(W.rundung) + ' €.';
+      break;
+  }
+  return null;
+}
+
+/* ---------- Aufgaben erfinden ---------- */
+const zz = (a,b) => a + Math.floor(Math.random() * (b - a + 1));
+const wahl = arr => arr[Math.floor(Math.random() * arr.length)];
+function mische(arr){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+
+function neueAngaben(stufe){
+  if (stufe === 0) return JSON.parse(JSON.stringify(BEISPIEL));
+  for (let t = 0; t < 80; t++){
+    const A = {ort: wahl(ORTE), beispiel:false};
+    const zwei = stufe >= 3 && Math.random() < 0.5;
+    const q1 = zz(11,17) * 5;
+    A.einheiten = [{n: zz(2,8), qm: q1}];
+    if (zwei){ let q2; do { q2 = zz(8,20) * 5; } while (q2 === q1); A.einheiten.push({n: zz(1,4), qm: q2}); }
+    A.nWhg = A.einheiten.reduce((s,e) => s + e.n, 0);
+    A.wfl = A.einheiten.reduce((s,e) => s + e.n * e.qm, 0);
+    A.miete = zz(65,135) / 10;
+    A.istMiete = (stufe >= 3 && Math.random() < 0.35) ? Math.round(A.miete * (0.72 + Math.random()*0.15) * 10) / 10 : null;
+    A.bwk = Math.random() < 0.5 ? {art:'pauschal', pct: zz(18,28)} : {art:'einzeln', verw: zz(64,76) * 5, inst: zz(115,150) / 10, maw: 2};
+    A.grund = Math.round(A.wfl * (0.6 + Math.random() * 1.2) / 10) * 10;
+    A.brw = zz(12,65) * 10;
+    A.lz = zz(8,20) * 0.25;
+    A.rnd = zz(20,60);
+    A.baujahr = STICHTAG - (GND - A.rnd);
+    A.rndAusAlter = stufe >= 4 && Math.random() < 0.4;
+    if (Math.random() < 0.55){ const b = wahl(BOG_ARTEN); A.bog = {betrag: -zz(8,70) * 1000, satz: b[0], kurz: b[1]}; }
+    else A.bog = null;
+    const W = rechne(A);
+    if (W.rea > 0 && W.bvz < 0.6 * W.rein && W.ew > 0) return A;
+  }
+  return JSON.parse(JSON.stringify(BEISPIEL));
+}
+
+function wohnungenText(A){
+  if (!A.einheiten) return A.nWhg + ' Wohnungen mit zusammen ' + fq(A.wfl) + ' m² Wohnfläche';
+  if (A.einheiten.length === 1) return A.nWhg + ' Wohnungen mit zusammen ' + fq(A.wfl) + ' m² Wohnfläche';
+  return A.einheiten.map(e => e.n + (e.n === 1 ? ' Wohnung' : ' Wohnungen') + ' mit je ' + fq(e.qm) + ' m²').join(' und ');
+}
+function prosa(A){
+  const m = s => '<mark>' + s + '</mark>';
+  let t = 'Zu bewerten ist ein Mehrfamilienhaus in ' + A.ort + '. Es hat ' + m(wohnungenText(A)) + (A.einheiten && A.einheiten.length > 1 ? ' Wohnfläche' : '') + '. ';
+  if (A.istMiete) t += 'Die Mieter zahlen derzeit ' + m(fm(A.istMiete) + ' €/m²') + ' im Monat, marktüblich erzielbar sind ' + m(fm(A.miete) + ' €/m²') + ' (Nettokaltmiete). Weitere Mietabweichungen sind nicht zu berücksichtigen. ';
+  else t += 'Marktüblich erzielbar ist eine Nettokaltmiete von ' + m(fm(A.miete) + ' €/m²') + ' im Monat. ';
+  if (A.bwk.art === 'pauschal') t += 'Die Bewirtschaftungskosten betragen ' + m(fp(A.bwk.pct) + ' % des Rohertrags') + '. ';
+  else t += 'Bewirtschaftungskosten laut Modell des Gutachterausschusses: Verwaltung ' + m(fe(A.bwk.verw) + ' € je Wohnung') + ' und Jahr, Instandhaltung ' + m(fm(A.bwk.inst) + ' €/m²') + ' Wohnfläche und Jahr, Mietausfallwagnis ' + m(fp(A.bwk.maw) + ' % des Rohertrags') + '. Umlegbare Betriebskosten zahlen die Mieter. ';
+  t += 'Das Grundstück ist ' + m(fq(A.grund) + ' m²') + ' groß, der Bodenrichtwert beträgt ' + m(fe(A.brw) + ' €/m²') + '. ';
+  t += 'Der Gutachterausschuss veröffentlicht einen Liegenschaftszinssatz von ' + m(fp(A.lz) + ' %') + '. ';
+  if (A.rndAusAlter) t += 'Das Haus wurde ' + m(String(A.baujahr)) + ' gebaut und nie modernisiert. Stichtag ist ' + STICHTAG + ', die Gesamtnutzungsdauer beträgt ' + m(GND + ' Jahre') + '. ';
+  else t += 'Die Restnutzungsdauer beträgt ' + m(A.rnd + ' Jahre') + '. ';
+  if (A.bog) t += A.bog.satz + ' ' + m(fe(-A.bog.betrag) + ' €') + '. ';
+  t += 'Ermittle Ertragswert und Verkehrswert im allgemeinen Ertragswertverfahren.';
+  return t;
+}
+function angabenTabelle(A){
+  const z = [];
+  z.push(['Wohnungen', A.einheiten && A.einheiten.length > 1 ? A.einheiten.map(e => e.n + ' × ' + fq(e.qm) + ' m²').join(' + ') : A.nWhg + ' Stück, zusammen ' + fq(A.wfl) + ' m²']);
+  if (A.istMiete) z.push(['Miete tatsächlich', fm(A.istMiete) + ' €/m² mtl.']);
+  z.push([A.istMiete ? 'Miete marktüblich' : 'Miete (marktüblich)', fm(A.miete) + ' €/m² mtl.']);
+  if (A.bwk.art === 'pauschal') z.push(['Bewirtschaftungskosten', fp(A.bwk.pct) + ' % vom Rohertrag']);
+  else { z.push(['Verwaltung', fe(A.bwk.verw) + ' € je Wohnung']); z.push(['Instandhaltung', fm(A.bwk.inst) + ' €/m²']); z.push(['Mietausfallwagnis', fp(A.bwk.maw) + ' % vom Rohertrag']); }
+  z.push(['Grundstück', fq(A.grund) + ' m²']);
+  z.push(['Bodenrichtwert', fe(A.brw) + ' €/m²']);
+  z.push(['Liegenschaftszinssatz', fp(A.lz) + ' %']);
+  if (A.rndAusAlter) { z.push(['Baujahr / Stichtag', A.baujahr + ' / ' + STICHTAG]); z.push(['Gesamtnutzungsdauer', GND + ' Jahre']); }
+  else z.push(['Restnutzungsdauer', A.rnd + ' Jahre']);
+  z.push(['Besonderheit (boG)', A.bog ? A.bog.kurz + ': ' + fe(-A.bog.betrag) + ' €' : 'keine']);
+  return '<dl class="tab">' + z.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>').join('') + '</dl>';
+}
+
+/* ---------- Lernstand ---------- */
+function leer(){ return {v:1, stufe:0, punkte:0, serie:{letzter:'', tage:0}, fertig:0, folge:0, stat:{}, verlauf:[], lauf:null, naechste:null, letztes:null, geaendert:0}; }
+function normalisiere(s){ const d = leer(); if (!s || typeof s !== 'object') return d; for (const k in d) if (s[k] === undefined) s[k] = d[k]; return s; }
+let S = leer();
+try { const roh = localStorage.getItem(SPEICHER); if (roh) S = normalisiere(JSON.parse(roh)); } catch(e){}
+let ansicht = 'start';
+let DB = null, dbLaeuft = false, dbNochmal = false, dbTimer = null;
+
+function speichernLokal(){ try { localStorage.setItem(SPEICHER, JSON.stringify(S)); } catch(e){} }
+function speichern(){ S.geaendert = Date.now(); speichernLokal(); clearTimeout(dbTimer); dbTimer = setTimeout(schreibeDB, 700); }
+async function schreibeDB(){
+  if (!DB) return;
+  if (dbLaeuft){ dbNochmal = true; return; }
+  dbLaeuft = true;
+  try { await DB.doc(DOC).set({stand: JSON.parse(JSON.stringify(S))}); }
+  catch(e){ if (e && ['revoked','not_granted','invalid_argument','capability_disabled','capability_removed'].includes(e.code)) DB = null; }
+  dbLaeuft = false;
+  if (dbNochmal){ dbNochmal = false; schreibeDB(); }
+}
+async function dbStart(){
+  try {
+    if (!window.claude || typeof window.claude.use !== 'function') return;
+    DB = await window.claude.use('db');
+    if (!DB) return;
+    const snap = await DB.doc(DOC).get();
+    const d = snap.exists ? snap.data() : null;
+    if (d && d.stand && (d.stand.geaendert || 0) > (S.geaendert || 0)){
+      S = normalisiere(JSON.parse(JSON.stringify(d.stand)));
+      speichernLokal();
+      const tippt = document.activeElement && document.activeElement.tagName === 'INPUT';
+      if (!tippt) render();
+    } else if (S.geaendert) schreibeDB();
+  } catch(e){ DB = null; }
+}
+
+function heute(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function gestern(){ const d = new Date(); d.setDate(d.getDate()-1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function naechste(){
+  if (!S.naechste || S.naechste.stufe !== S.stufe){ S.naechste = {stufe:S.stufe, A: neueAngaben(S.stufe)}; speichern(); }
+  return S.naechste;
+}
+function minuten(n, stufe){ return Math.max(3, Math.round(n * (stufe === 0 ? 0.35 : 0.55))); }
+
+/* ---------- Ablauf einer Aufgabe ---------- */
+function starte(){
+  if (!S.lauf){
+    const N = naechste();
+    const A = N.A;
+    S.lauf = {A, stufe:S.stufe, reihe: reiheVon(A), i:0, erg:{}, versuch:0, tipp:false, meldung:null, phase:null, opts:null, gewaehlt:[], punkte:0, eingabe:''};
+    S.naechste = null;
+    phaseSetzen();
+  }
+  ansicht = 'lauf';
+  speichern(); render();
+}
+function phaseSetzen(){
+  const L = S.lauf;
+  L.versuch = 0; L.tipp = false; L.meldung = null; L.eingabe = ''; L.gewaehlt = []; L.opts = null;
+  if (L.stufe === 0) L.phase = 'zeigen';
+  else if (L.stufe >= 4){ L.phase = 'wahl'; L.opts = wahlOptionen(L); }
+  else L.phase = 'rechnen';
+}
+function wahlOptionen(L){
+  const id = L.reihe[L.i];
+  const erledigt = new Set(L.reihe.slice(0, L.i));
+  const inReihe = new Set(L.reihe);
+  const unmoeglich = L.reihe.slice(L.i + 1).filter(s => SCHRITTE[s].braucht.some(b => inReihe.has(b) && !erledigt.has(b)));
+  const opts = [{t: SCHRITTE[id].name, ok:true}];
+  if (unmoeglich.length){
+    const u = wahl(unmoeglich);
+    const fehlt = SCHRITTE[u].braucht.filter(b => inReihe.has(b) && !erledigt.has(b)).map(b => SCHRITTE[b].name);
+    opts.push({t: SCHRITTE[u].name, ok:false, w:'Noch zu früh. Dafür brauchst du erst: ' + fehlt.join(' und ') + '.'});
+  }
+  const f = mische(FEHLSCHRITTE);
+  while (opts.length < 3) opts.push(Object.assign({ok:false}, f.pop()));
+  return mische(opts);
+}
+function punkte(n){ S.punkte += n; S.lauf.punkte += n; plusZeigen = n; }
+let plusZeigen = 0;
+
+function statZaehlen(id, ok){ const s = S.stat[id] || (S.stat[id] = {ok:0, fehl:0}); if (ok) s.ok++; else s.fehl++; }
+
+function pruefen(){
+  const L = S.lauf, id = L.reihe[L.i];
+  const feld = document.getElementById('antwort');
+  const x = lies(feld ? feld.value : '');
+  L.eingabe = feld ? feld.value : '';
+  if (!isFinite(x)){ L.meldung = 'Bitte eine Zahl eintragen, zum Beispiel 12.500 oder 19,79.'; speichern(); render(); return; }
+  const W = rechne(L.A);
+  if (stimmt(id, x, W)){
+    const erst = L.versuch === 0;
+    L.erg[id] = erst && !L.tipp ? 'ok1' : 'ok2';
+    if (erst) statZaehlen(id, !L.tipp);
+    punkte(erst && !L.tipp ? 10 : 5);
+    L.phase = 'richtig'; L.meldung = null;
+  } else {
+    if (L.versuch === 0) statZaehlen(id, false);
+    L.versuch++;
+    if (L.versuch >= 2){ L.erg[id] = 'geloest'; L.phase = 'geloest'; L.meldung = diagnose(id, x, L.A, W); }
+    else { L.meldung = diagnose(id, x, L.A, W) || 'Schau dir die Formel an und rechne noch einmal.'; L.tipp = true; }
+  }
+  speichern(); render();
+}
+function waehle(k){
+  const L = S.lauf, o = L.opts[k];
+  if (!o || L.gewaehlt.includes(k)) return;
+  if (o.ok){
+    if (L.gewaehlt.length === 0) punkte(5);
+    L.phase = 'rechnen'; L.meldung = null;
+  } else {
+    L.gewaehlt.push(k); L.meldung = o.w;
+  }
+  speichern(); render();
+}
+function weiter(){
+  const L = S.lauf;
+  if (L.phase === 'zeigen'){ L.erg[L.reihe[L.i]] = 'gesehen'; punkte(2); }
+  L.i++;
+  if (L.i >= L.reihe.length){ abschluss(); return; }
+  phaseSetzen(); speichern(); render();
+}
+function abschluss(){
+  const L = S.lauf;
+  const n = L.reihe.length;
+  const ok = L.reihe.filter(id => L.erg[id] === 'ok1').length;
+  const quote = L.stufe === 0 ? 1 : ok / n;
+  const W = rechne(L.A);
+  S.fertig++;
+  const h = heute();
+  if (S.serie.letzter !== h){ S.serie.tage = S.serie.letzter === gestern() ? S.serie.tage + 1 : 1; S.serie.letzter = h; }
+  let auf = false;
+  if (L.stufe === S.stufe){
+    if (S.stufe === 0){ S.stufe = 1; S.folge = 0; auf = true; }
+    else if (quote >= 0.9){ S.folge++; if (S.folge >= 2 && S.stufe < 4){ S.stufe++; S.folge = 0; auf = true; } }
+    else S.folge = 0;
+  }
+  const schwach = L.reihe.filter(id => L.erg[id] === 'ok2' || L.erg[id] === 'geloest');
+  S.verlauf.push({d:h, stufe:L.stufe, ok, n, vw:W.vw});
+  if (S.verlauf.length > 60) S.verlauf = S.verlauf.slice(-60);
+  S.letztes = {stufe:L.stufe, ok, n, quote, vw:W.vw, ew:W.ew, punkte:L.punkte, auf, schwach, beispiel: !!L.A.beispiel};
+  S.lauf = null;
+  S.naechste = {stufe:S.stufe, A: neueAngaben(S.stufe)};
+  ansicht = 'ende';
+  speichern(); render();
+}
+
+/* ---------- Anzeigen ---------- */
+const $app = document.getElementById('app');
+function chips(){
+  const st = STUFEN[S.stufe];
+  const serie = S.serie.letzter === heute() || S.serie.letzter === gestern() ? S.serie.tage : 0;
+  document.getElementById('chips').innerHTML =
+    '<span class="chip">Stufe <b>' + S.stufe + '</b> · ' + st.name + '</span>' +
+    '<span class="chip" id="chip-punkte"><b>' + S.punkte + '</b> Punkte' + (plusZeigen ? '<span class="plus">+' + plusZeigen + '</span>' : '') + '</span>' +
+    '<span class="chip">Serie <b>' + serie + '</b> ' + (serie === 1 ? 'Tag' : 'Tage') + '</span>';
+  plusZeigen = 0;
+}
+function leiter(){ let h = '<div class="leiter" aria-label="Stufe ' + S.stufe + ' von 4">'; for (let i = 0; i <= 4; i++) h += '<span class="' + (i < S.stufe ? 'da' : (i === S.stufe ? 'jetzt' : '')) + '"></span>'; return h + '</div>'; }
+
+function vStart(){
+  let knopf;
+  if (S.lauf){
+    const L = S.lauf;
+    knopf = '<button class="knopf" data-a="starte">Weiterrechnen<small>Schritt ' + (L.i + 1) + ' von ' + L.reihe.length + ' · ' + L.A.ort + '</small></button>';
+  } else {
+    const N = naechste(), n = reiheVon(N.A).length;
+    knopf = '<button class="knopf" data-a="starte">' + (S.stufe === 0 ? 'Vorrechnen lassen' : 'Aufgabe rechnen') + '<small>' + n + ' Schritte · etwa ' + minuten(n, S.stufe) + ' Minuten</small></button>';
+  }
+  const st = STUFEN[S.stufe];
+  let aufstieg = '';
+  if (S.stufe === 0) aufstieg = 'Nach dieser einen Vorführung geht es mit Stufe 1 weiter.';
+  else if (S.stufe < 4) aufstieg = 'Aufstieg: 2 Aufgaben hintereinander mit mindestens 90 % beim ersten Versuch.' + (S.folge ? ' Eine hast du schon.' : '');
+  else aufstieg = S.folge >= 3 ? 'Prüfungsreif: ' + S.folge + ' Aufgaben in Folge mit mindestens 90 %.' : 'Ziel: 3 Aufgaben in Folge mit mindestens 90 %. Dann sitzt es. ' + (S.folge ? 'Stand: ' + S.folge + '.' : '');
+  return '<section class="karte heute">' +
+      '<div class="stufe-titel"><h2>Stufe ' + S.stufe + ': ' + st.name + '</h2>' + leiter() + '</div>' +
+      '<p style="margin:0">' + st.kurz + '</p>' +
+      knopf +
+      '<div class="hinweis">Das hier ist das Üben. Mehr musst du nicht anfassen. ' + aufstieg + '</div>' +
+      (S.lauf ? '<div><button class="linkknopf" data-a="verwerfen">' + (verwerfenFrage ? 'Wirklich verwerfen? Hier klicken zum Bestätigen' : 'Angefangene Aufgabe verwerfen') + '</button></div>' : '') +
+    '</section>' +
+    '<div class="neben">' +
+      '<details class="fach" id="d-spick"' + (offen.spick ? ' open' : '') + '><summary><span>Der Rechenweg auf einen Blick<span class="marke">Spickzettel</span></span></summary><div class="fach-inhalt">' + spickzettel() + '</div></details>' +
+      '<details class="fach" id="d-rechner"' + (offen.rechner ? ' open' : '') + '><summary><span>Rechner für eigene Zahlen<span class="marke">zählt nicht zum Üben</span></span></summary><div class="fach-inhalt">' + rechnerHtml() + '</div></details>' +
+      '<details class="fach" id="d-stand"' + (offen.stand ? ' open' : '') + '><summary><span>Lernstand und Stufe<span class="marke">nur Zahlen</span></span></summary><div class="fach-inhalt">' + standHtml() + '</div></details>' +
+    '</div>';
+}
+let verwerfenFrage = false, resetFrage = false;
+const offen = {spick:false, rechner:false, stand:false};
+
+function spickzettel(){
+  const zeilen = [
+    ['', 'Rohertrag', 'Wohnfläche × Miete × 12'],
+    ['−', 'Bewirtschaftungskosten', 'Verwaltung + Instandhaltung + Mietausfallwagnis'],
+    ['=', 'Reinertrag', '', true],
+    ['−', 'Bodenwertverzinsung', 'Bodenwert × Liegenschaftszinssatz'],
+    ['=', 'Gebäudereinertrag', '', true],
+    ['×', 'Barwertfaktor', 'aus Liegenschaftszinssatz und Restnutzungsdauer'],
+    ['=', 'Gebäudeertragswert', '', true],
+    ['+', 'Bodenwert', 'Grundstücksfläche × Bodenrichtwert'],
+    ['=', 'vorläufiger Ertragswert', 'zugleich marktangepasst (Markt steckt im Zinssatz)', true],
+    ['±', 'boG', 'z. B. Instandhaltungsstau abziehen'],
+    ['=', 'Ertragswert', '', true],
+    ['≈', 'Verkehrswert', 'sinnvoll gerundet', true]
+  ];
+  return '<div class="karo heft"><div class="rechnung">' + zeilen.map(z =>
+      '<div class="op">' + z[0] + '</div><div class="zeile' + (z[3] ? ' erg' : '') + '"><span class="name">' + z[1] + '</span><span class="fml">' + z[2] + '</span></div>').join('') +
+    '</div></div>' +
+    '<div class="merk"><div class="hand">Roh minus Kosten gibt Rein. Rein minus Bodenzins gibt Gebäude. Gebäude mal Faktor plus Boden gibt Wert.</div>' +
+    '<div class="klein" style="margin-top:6px">Merkbilder wie im SV-Trainer: Nike zählt die Miete, die Motte frisst die Kosten, der Neffe zieht den Bodenzins ab, das Meer macht den Barwertfaktor, der Neffe legt den Boden wieder drauf, die Fee zeigt den Schaden.</div></div>' +
+    '<div><b>Barwertfaktor</b> (jährlich nachschüssig, § 34 Abs. 2)<div class="formelbox" style="margin-top:6px">BWF = (qⁿ − 1) ÷ (qⁿ × (q − 1))<br>q = 1 + Zinssatz ÷ 100 · n = Restnutzungsdauer<br>Beispiel: 4 % und 40 Jahre → q = 1,04 → qⁿ = 4,8010 → BWF = 19,79</div></div>' +
+    '<div class="klein"><b>Wichtig:</b> Beide Male derselbe Liegenschaftszinssatz. Der Bodenwert taucht zweimal auf, einmal verzinst (abgezogen) und einmal voll (addiert). Das ist das <i>allgemeine</i> Verfahren nach § 28. Das vereinfachte nach § 29 kapitalisiert den ganzen Reinertrag und zinst dafür den Boden ab.</div>';
+}
+
+/* Rechner */
+const R_BEISPIEL = {wfl:500, nWhg:6, miete:10, art:'einzeln', verw:350, inst:13.4, maw:2, pct:20, grund:600, brw:350, lz:4, rnd:40, bog:35000};
+let R = Object.assign({}, R_BEISPIEL);
+try { const r = localStorage.getItem(RSPEICHER); if (r) R = Object.assign({}, R_BEISPIEL, JSON.parse(r)); } catch(e){}
+function rechnerA(){
+  return {ort:'', nWhg: R.nWhg, wfl: R.wfl, einheiten:null, miete: R.miete,
+    bwk: R.art === 'pauschal' ? {art:'pauschal', pct:R.pct} : {art:'einzeln', verw:R.verw, inst:R.inst, maw:R.maw},
+    grund:R.grund, brw:R.brw, lz:R.lz, rnd:R.rnd, bog: R.bog ? {betrag:-Math.abs(R.bog), kurz:'boG'} : null};
+}
+function feld(id, label, wert){ return '<label for="r-' + id + '">' + label + '<input id="r-' + id + '" data-r="' + id + '" inputmode="decimal" value="' + String(wert).replace('.', ',') + '"></label>'; }
+function rechnerHtml(){
+  const istBsp = JSON.stringify(R) === JSON.stringify(R_BEISPIEL);
+  return '<div class="klein">' + (istBsp ? 'Eingetragen ist das Beispiel-Mehrfamilienhaus aus dem SV-Trainer. Überschreib die Zahlen mit deinem Fall.' : 'Deine eigenen Zahlen.') + '</div>' +
+    '<div class="formular">' +
+      '<div class="gruppe">Ertrag</div>' + feld('wfl','Wohnfläche gesamt (m²)',R.wfl) + feld('nWhg','Anzahl Wohnungen',R.nWhg) + feld('miete','Miete (€/m² im Monat)',R.miete) +
+      '<div class="gruppe">Bewirtschaftungskosten</div>' +
+      '<label for="r-art">Art<select id="r-art" data-r="art"><option value="einzeln"' + (R.art === 'einzeln' ? ' selected' : '') + '>einzeln (Modell)</option><option value="pauschal"' + (R.art === 'pauschal' ? ' selected' : '') + '>pauschal in %</option></select></label>' +
+      (R.art === 'pauschal' ? feld('pct','Prozent vom Rohertrag',R.pct) : feld('verw','Verwaltung (€ je Wohnung)',R.verw) + feld('inst','Instandhaltung (€/m²)',R.inst) + feld('maw','Mietausfallwagnis (%)',R.maw)) +
+      '<div class="gruppe">Boden und Zins</div>' + feld('grund','Grundstück (m²)',R.grund) + feld('brw','Bodenrichtwert (€/m²)',R.brw) + feld('lz','Liegenschaftszinssatz (%)',R.lz) + feld('rnd','Restnutzungsdauer (Jahre)',R.rnd) +
+      '<div class="gruppe">Besonderheiten</div>' + feld('bog','boG, Abzug in € (z. B. Stau)',R.bog) +
+    '</div>' +
+    '<div id="r-erg">' + rechnerErgebnis() + '</div>' +
+    (istBsp ? '' : '<div><button class="knopf2" data-a="r-beispiel">Beispielzahlen wiederherstellen</button></div>');
+}
+function rechnerErgebnis(){
+  const A = rechnerA();
+  const ok = [A.wfl, A.nWhg, A.miete, A.grund, A.brw, A.lz, A.rnd].every(v => isFinite(v) && v > 0) && (A.bwk.art === 'pauschal' ? isFinite(A.bwk.pct) : [A.bwk.verw, A.bwk.inst, A.bwk.maw].every(isFinite));
+  if (!ok) return '<div class="rueck schlecht"><span>Bitte alle Felder mit Zahlen größer als null füllen. Dann rechnet der Zettel sofort.</span></div>';
+  const W = rechne(A);
+  const ops = {roh:'', bwk:'−', rein:'=', bvz:'−', rea:'=', bwf:'×', ewg:'=', boden:'+', vorl:'=', ew:'±', vw:'≈'};
+  const ids = ['roh','bwk','rein','bvz','rea','bwf','ewg','boden','vorl','ew','vw'];
+  const zeilen = ids.map(id =>
+    '<div class="zl"><span class="n">' + (ops[id] ? '<span class="zahl" style="color:var(--rot)">' + ops[id] + '</span> ' : '') + SCHRITTE[id].name +
+    '<span class="e">' + eingesetzt(id, A, W) + '</span></span><span class="w">' + wertText(id, W[id]) + '</span><span></span></div>').join('');
+  const gw = Math.max(0, W.ewg), bw = Math.max(0, W.boden), sum = gw + bw || 1;
+  return '<div class="karo heft"><div class="zettel">' + zeilen + '</div></div>' +
+    '<div><div class="klein" style="margin-bottom:6px">Woraus der vorläufige Ertragswert besteht</div>' +
+    '<div class="aufteilung"><div style="width:' + (gw/sum*100) + '%;background:var(--blau)">' + (gw/sum > 0.18 ? 'Gebäude ' + Math.round(gw/sum*100) + ' %' : '') + '</div>' +
+    '<div style="width:' + (bw/sum*100) + '%;background:var(--gruen)">' + (bw/sum > 0.18 ? 'Boden ' + Math.round(bw/sum*100) + ' %' : '') + '</div></div>' +
+    '<div class="legende" style="margin-top:6px"><span><i style="background:var(--blau)"></i>Gebäudeertragswert ' + fe(W.ewg) + ' €</span><span><i style="background:var(--gruen)"></i>Bodenwert ' + fe(W.boden) + ' €</span></div></div>' +
+    '<div class="klein">Barwertfaktor genau: ' + nf(W.bwfExakt,4) + ' (gerechnet wird mit ' + nf(W.bwf,2) + ').</div>';
+}
+
+function standHtml(){
+  const eintraege = Object.keys(S.stat).map(id => ({id, ...S.stat[id], q: S.stat[id].fehl / (S.stat[id].ok + S.stat[id].fehl)})).filter(e => e.fehl > 0).sort((a,b) => b.q - a.q).slice(0,4);
+  const letzte = S.verlauf.slice(-5).reverse();
+  let h = '<div class="bilanz" style="margin:0"><div><span class="klein">Aufgaben fertig</span><b>' + S.fertig + '</b></div><div><span class="klein">Punkte</span><b>' + S.punkte + '</b></div><div><span class="klein">Stufe</span><b>' + S.stufe + ' von 4</b></div></div>';
+  h += '<div><b>Daran hängst du am häufigsten</b>' + (eintraege.length ? '<ul class="schwach">' + eintraege.map(e => '<li>' + SCHRITTE[e.id].name + ': ' + e.fehl + ' von ' + (e.ok + e.fehl) + ' nicht im ersten Versuch</li>').join('') + '</ul>' : '<div class="klein">Noch nichts. Das füllt sich beim Üben.</div>') + '</div>';
+  if (letzte.length) h += '<div><b>Letzte Aufgaben</b><ul class="schwach">' + letzte.map(v => '<li>' + v.d.split('-').reverse().join('.') + ' · Stufe ' + v.stufe + ' · ' + (v.stufe === 0 ? 'vorgerechnet' : v.ok + ' von ' + v.n + ' im ersten Versuch') + '</li>').join('') + '</ul></div>';
+  h += '<div><b>Stufe selbst wählen</b><div class="klein" style="margin-bottom:6px">Normalerweise steigst du von allein auf. Hier kannst du zurück oder vorspringen.</div><div class="stufenwahl">' +
+    STUFEN.map((s,i) => '<button data-a="stufe" data-k="' + i + '" class="' + (i === S.stufe ? 'an' : '') + '">' + i + ' · ' + s.name + '</button>').join('') + '</div></div>';
+  h += '<div><button class="linkknopf" data-a="reset">' + (resetFrage ? 'Wirklich alles auf null? Hier klicken zum Bestätigen' : 'Lernstand komplett zurücksetzen') + '</button></div>';
+  return h;
+}
+
+function vLauf(){
+  const L = S.lauf, A = L.A, W = rechne(A), id = L.reihe[L.i], sch = SCHRITTE[id];
+  const seg = L.reihe.map((s, k) => {
+    const e = L.erg[s];
+    const c = k === L.i && L.phase !== 'richtig' && L.phase !== 'geloest' ? 'jetzt' : (e === 'ok1' || e === 'gesehen' ? 'ok' : (e ? 'korr' : ''));
+    return '<span class="' + c + '"></span>';
+  }).join('');
+  const kopf = '<div class="laufkopf"><button class="knopf2" data-a="pause">← Pause</button><span class="klein">Schritt <b class="zahl">' + (L.i + 1) + '</b> von ' + L.reihe.length + ' · +' + L.punkte + ' Punkte</span></div><div class="balken" aria-hidden="true">' + seg + '</div>';
+  const angaben = '<details class="fach angaben" id="d-angaben"' + (offen.angaben === false ? '' : ' open') + '><summary><span>Aufgabe: Mehrfamilienhaus in ' + A.ort + (A.beispiel ? '<span class="marke">Beispiel</span>' : '') + '</span></summary><div class="fach-inhalt">' +
+    (L.stufe <= 2 ? angabenTabelle(A) : '<p class="prosa">' + prosa(A) + '</p>') + '</div></details>';
+
+  // Rechenzettel: fertige Zeilen
+  const fertig = L.reihe.slice(0, L.i + ((L.phase === 'richtig' || L.phase === 'geloest') ? 1 : 0));
+  const zeilen = fertig.length ? fertig.map(s => {
+    const e = L.erg[s];
+    const m = e === 'ok1' || e === 'gesehen' ? '<span class="m ok">✓</span>' : (e === 'ok2' ? '<span class="m ok">✓</span>' : '<span class="m korr">✗</span>');
+    return '<div class="zl"><span class="n">' + SCHRITTE[s].name + '<span class="e">' + eingesetzt(s, A, W) + '</span></span><span class="w">' + wertText(s, W[s]) + '</span>' + m + '</div>';
+  }).join('') : '<div class="zettel-leer">Hier entsteht dein Rechenzettel. Jede fertige Zeile bleibt stehen.</div>';
+
+  const einh = einheit(sch.art);
+  const zeigFormel = L.stufe <= 2 || L.tipp || L.phase === 'geloest';
+  const zeigEinsetz = L.stufe <= 1 || (L.tipp && L.stufe === 2);
+  const rundHinweis = id === 'vw' ? '<div class="klein">Runde auf volle ' + fe(W.rundung) + ' €.</div>' : (id === 'bwf' ? '<div class="klein">Auf 2 Nachkommastellen runden.</div>' : '');
+  const bogHinweis = id === 'ew' && !A.bog ? '<div class="klein">In dieser Aufgabe gibt es keine Besonderheit. Der Wert bleibt also gleich.</div>' : '';
+  const warum = '<details class="warum"><summary>Warum? Und die typische Falle</summary><p>' + sch.warum + '</p><p><b>Falle:</b> ' + sch.falle + '</p></details>';
+  const merk = '<div class="merk"><div class="hand">' + sch.merk + '</div></div>';
+  let box = '';
+
+  if (L.phase === 'wahl'){
+    box = '<div class="kopfzeile"><h3>Was rechnest du jetzt?</h3><span class="par">Schritt ' + (L.i + 1) + '</span></div>' +
+      '<div class="wahl">' + L.opts.map((o, k) => '<button data-a="waehle" data-k="' + k + '"' + (L.gewaehlt.includes(k) ? ' disabled' : '') + '>' + o.t + '</button>').join('') + '</div>' +
+      (L.meldung ? '<div class="rueck schlecht"><span class="hand">Nein.</span><span>' + L.meldung + '</span></div>' : '');
+  } else {
+    box = '<div class="kopfzeile"><h3>' + sch.name + '</h3><span class="par">' + sch.par + '</span></div>' +
+      (sch.amtlich ? '<div class="amtlich">amtlich: ' + sch.amtlich + '</div>' : '');
+    if (zeigFormel) box += '<div class="fml-zeile"><span class="lab">Formel</span>' + formelVon(id, A) + '</div>';
+    if (L.phase === 'zeigen'){
+      box += '<div class="fml-zeile"><span class="lab">Eingesetzt</span>' + eingesetzt(id, A, W) + '</div>' +
+        '<div class="rueck gut"><span class="hand">= ' + wertText(id, W[id]) + '</span></div>' + merk + warum +
+        '<button class="knopf" data-a="weiter" id="weiter">' + (L.i + 1 === L.reihe.length ? 'Fertig' : 'Verstanden, weiter') + '</button>';
+    } else if (L.phase === 'rechnen'){
+      if (zeigEinsetz) box += '<div class="fml-zeile"><span class="lab">Eingesetzt</span>' + eingesetzt(id, A, W) + '</div>';
+      box += rundHinweis + bogHinweis +
+        '<form class="eingabe" data-f="pruefen" autocomplete="off"><div class="feld"><input id="antwort" inputmode="decimal" aria-label="Ergebnis ' + sch.name + '" placeholder="Ergebnis" value="' + (L.eingabe || '').replace(/"/g,'') + '">' + (einh ? '<span class="einh">' + einh + '</span>' : '') + '</div><button class="knopf" type="submit">Prüfen</button></form>' +
+        (L.meldung ? '<div class="rueck schlecht"><span class="hand">Noch nicht.</span><span>' + L.meldung + '</span></div>' : '') +
+        (!L.tipp && L.stufe >= 3 ? '<div><button class="linkknopf" data-a="tipp">Tipp: Formel zeigen (gibt dann 5 statt 10 Punkte)</button></div>' : '');
+    } else if (L.phase === 'richtig'){
+      box += '<div class="rueck gut"><span class="hand">Richtig! +' + (L.erg[id] === 'ok1' ? 10 : 5) + '</span><span class="zahl">' + eingesetzt(id, A, W) + ' = ' + wertText(id, W[id]) + '</span></div>' + merk + warum +
+        '<button class="knopf" data-a="weiter" id="weiter">' + (L.i + 1 === L.reihe.length ? 'Fertig' : 'Weiter') + '</button>';
+    } else if (L.phase === 'geloest'){
+      box += '<div class="rueck schlecht"><span class="hand">So geht es:</span>' + (L.meldung ? '<span>' + L.meldung + '</span>' : '') + '<span class="zahl">' + eingesetzt(id, A, W) + ' = ' + wertText(id, W[id]) + '</span><span class="klein">Kein Problem. Der Schritt kommt in den nächsten Aufgaben wieder.</span></div>' + merk + warum +
+        '<button class="knopf" data-a="weiter" id="weiter">' + (L.i + 1 === L.reihe.length ? 'Fertig' : 'Übernehmen und weiter') + '</button>';
+    }
+  }
+  return kopf + angaben + '<div class="karo heft"><div class="zettel">' + zeilen + '</div><div class="schritt">' + box + '</div></div>';
+}
+
+function vEnde(){
+  const E = S.letztes;
+  if (!E) { ansicht = 'start'; return vStart(); }
+  const N = naechste(), n = reiheVon(N.A).length;
+  let stufeText;
+  if (E.auf) stufeText = '<b>Aufgestiegen:</b> jetzt Stufe ' + S.stufe + ' · ' + STUFEN[S.stufe].name + '. ' + STUFEN[S.stufe].kurz;
+  else if (E.stufe !== S.stufe) stufeText = 'Du übst jetzt auf Stufe ' + S.stufe + '.';
+  else if (S.stufe === 4) stufeText = S.folge >= 3 ? '<b>Prüfungsreif.</b> ' + S.folge + ' Aufgaben in Folge mit mindestens 90 %.' : (E.quote >= 0.9 ? 'Stark. Noch ' + (3 - S.folge) + ' in Folge, dann sitzt es prüfungsreif.' : 'Ziel: 3 Aufgaben in Folge mit mindestens 90 %. Diesmal ' + Math.round(E.quote*100) + ' %.');
+  else if (E.quote >= 0.9) stufeText = 'Noch <b>1</b> solche Aufgabe, dann kommt Stufe ' + (S.stufe + 1) + '.';
+  else stufeText = 'Für den Aufstieg brauchst du 2 Aufgaben hintereinander mit 90 %. Diesmal waren es ' + Math.round(E.quote*100) + ' %.';
+  return '<section class="karte ergebnis">' +
+      '<div class="hand">' + (E.stufe === 0 ? 'Einmal durch!' : (E.quote >= 0.9 ? 'Sehr gut!' : 'Geschafft!')) + '</div>' +
+      '<div class="klein">Verkehrswert rund</div><div class="vw">' + fe(E.vw) + ' €</div>' +
+      '<div class="klein">Ertragswert vor dem Runden: ' + fe(E.ew) + ' €</div>' +
+      '<div class="bilanz">' +
+        '<div><span class="klein">Im ersten Versuch</span><b>' + (E.stufe === 0 ? '–' : E.ok + ' von ' + E.n) + '</b></div>' +
+        '<div><span class="klein">Punkte</span><b>+' + E.punkte + '</b></div>' +
+        '<div><span class="klein">Serie</span><b>' + S.serie.tage + ' ' + (S.serie.tage === 1 ? 'Tag' : 'Tage') + '</b></div>' +
+      '</div>' +
+      (E.schwach.length ? '<p class="hinweis" style="text-align:left">Daran hing es: ' + E.schwach.map(s => SCHRITTE[s].name).join(', ') + '. Diese Schritte kommen in jeder Aufgabe wieder dran.</p>' : '') +
+      '<p style="text-align:left">' + stufeText + '</p>' +
+      '<div style="display:grid;gap:10px"><button class="knopf" data-a="starte">Nächste Aufgabe<small>' + n + ' Schritte · etwa ' + minuten(n, S.stufe) + ' Minuten</small></button>' +
+      '<button class="knopf2" data-a="heim">Fertig für heute</button></div>' +
+    '</section>';
+}
+
+function render(){
+  chips();
+  if (ansicht === 'lauf' && !S.lauf) ansicht = 'start';
+  $app.innerHTML = ansicht === 'lauf' ? vLauf() : (ansicht === 'ende' ? vEnde() : vStart());
+  if (ansicht === 'lauf'){
+    const a = document.getElementById('antwort'), w = document.getElementById('weiter');
+    if (a) a.focus({preventScroll:true});
+    else if (w) w.focus({preventScroll:true});
+    const s = $app.querySelector('.schritt');
+    if (s && s.getBoundingClientRect().top > window.innerHeight * 0.75) s.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+}
+
+/* ---------- Ereignisse ---------- */
+$app.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-a]');
+  if (!b) return;
+  const a = b.dataset.a;
+  if (a !== 'verwerfen') verwerfenFrage = false;
+  if (a !== 'reset') resetFrage = false;
+  switch(a){
+    case 'starte': starte(); window.scrollTo({top:0}); break;
+    case 'pause': ansicht = 'start'; render(); break;
+    case 'heim': ansicht = 'start'; render(); window.scrollTo({top:0}); break;
+    case 'weiter': weiter(); break;
+    case 'tipp': S.lauf.tipp = true; speichern(); render(); break;
+    case 'waehle': waehle(Number(b.dataset.k)); break;
+    case 'verwerfen':
+      if (!verwerfenFrage){ verwerfenFrage = true; render(); }
+      else { verwerfenFrage = false; S.lauf = null; speichern(); render(); }
+      break;
+    case 'stufe': S.stufe = Number(b.dataset.k); S.folge = 0; S.naechste = null; speichern(); render(); break;
+    case 'reset':
+      if (!resetFrage){ resetFrage = true; render(); }
+      else { resetFrage = false; S = leer(); speichern(); render(); }
+      break;
+    case 'r-beispiel': R = Object.assign({}, R_BEISPIEL); try { localStorage.setItem(RSPEICHER, JSON.stringify(R)); } catch(e){} render(); break;
+  }
+});
+$app.addEventListener('submit', ev => { if (ev.target.dataset.f === 'pruefen'){ ev.preventDefault(); pruefen(); } });
+$app.addEventListener('toggle', ev => {
+  const d = ev.target;
+  if (d.id === 'd-spick') offen.spick = d.open;
+  if (d.id === 'd-rechner') offen.rechner = d.open;
+  if (d.id === 'd-stand') offen.stand = d.open;
+  if (d.id === 'd-angaben') offen.angaben = d.open;
+}, true);
+$app.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.id === 'antwort' && S.lauf){ S.lauf.eingabe = t.value; speichernLokal(); return; }
+  const k = t.dataset && t.dataset.r;
+  if (!k) return;
+  if (k === 'art'){ R.art = t.value; }
+  else R[k] = lies(t.value);
+  try { localStorage.setItem(RSPEICHER, JSON.stringify(R)); } catch(e){}
+  if (k === 'art'){ render(); return; }
+  const erg = document.getElementById('r-erg');
+  if (erg) erg.innerHTML = rechnerErgebnis();
+});
+$app.addEventListener('change', ev => { if (ev.target.dataset && ev.target.dataset.r === 'art'){ R.art = ev.target.value; try { localStorage.setItem(RSPEICHER, JSON.stringify(R)); } catch(e){} render(); } });
+
+window.__etw = {rechne, neueAngaben, reiheVon, BEISPIEL};
+render();
+dbStart();
+})();
+</script>
+
+</body>
+</html>
